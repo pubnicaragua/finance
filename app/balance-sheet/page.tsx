@@ -1,93 +1,95 @@
+import { createClient } from "@/lib/supabase/server"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import { Wifi } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
-import { createClient } from "@/lib/supabase/server"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 
 export default async function BalanceSheetPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
-  // Fetch data for Balance Sheet
-  const { data: cuentasFinancieras, error: cuentasError } = await supabase
-    .from("cuentas_financieras")
-    .select("id, nombre, moneda, saldo")
+  // Fetch Activos Circulantes
+  const { data: cuentas, error: cuentasError } = await supabase.from("cuentas_financieras").select("nombre, saldo")
+  const { data: activosCorrientes, error: acError } = await supabase
+    .from("activos_corrientes")
+    .select("descripcion, valor") // Asumiendo que inventarios y cuentas por cobrar están aquí o se pueden categorizar
 
-  const { data: clientes, error: clientesError } = await supabase.from("clientes").select("id, deuda")
-
+  // Fetch Activos No Corrientes
   const { data: activosNoCorrientes, error: ancError } = await supabase
     .from("activos_no_corrientes")
     .select("valor_neto")
 
+  // Fetch Pasivos Corrientes
   const { data: pasivosCorrientes, error: pcError } = await supabase.from("pasivos_corrientes").select("saldo")
 
-  const { data: transacciones, error: transaccionesError } = await supabase.from("transacciones").select("monto, tipo")
+  // Fetch Pasivos No Corrientes
+  const { data: pasivosNoCorrientes, error: pncError } = await supabase.from("pasivos_no_corrientes").select("saldo")
 
-  const { data: comisiones, error: comisionesError } = await supabase.from("comisiones").select("monto")
+  // Fetch Utilidad Neta (para Patrimonio)
+  const { data: ingresosData, error: ingresosError } = await supabase
+    .from("transacciones")
+    .select("monto")
+    .eq("tipo", "ingreso")
+  const { data: egresosData, error: egresosError } = await supabase
+    .from("transacciones")
+    .select("monto")
+    .eq("tipo", "egreso")
+  const { data: comisionesData, error: comisionesError } = await supabase
+    .from("comisiones")
+    .select("monto")
+    .eq("pagada", false) // Asumiendo que solo las comisiones no pagadas afectan la utilidad neta para este cálculo
 
-  const { data: tipoCambio, error: tipoCambioError } = await supabase.from("tipo_cambio").select("valor").maybeSingle()
-
-  if (
-    cuentasError ||
-    clientesError ||
-    ancError ||
-    pcError ||
-    transaccionesError ||
-    comisionesError ||
-    tipoCambioError
-  ) {
-    console.error("Error fetching data for Balance Sheet:", {
+  if (cuentasError || acError || ancError || pcError || pncError || ingresosError || egresosError || comisionesError) {
+    console.error("Error fetching balance sheet data:", {
       cuentasError,
-      clientesError,
+      acError,
       ancError,
       pcError,
-      transaccionesError,
+      pncError,
+      ingresosError,
+      egresosError,
       comisionesError,
-      tipoCambioError,
     })
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4 text-red-500">
-        Error al cargar el Balance General.
-      </div>
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <h1 className="text-lg font-semibold">Balance General</h1>
+        </header>
+        <main className="flex flex-1 flex-col gap-4 p-4">
+          <h2 className="text-2xl font-bold">Balance General</h2>
+          <p className="text-red-500">Error al cargar los datos del balance general.</p>
+        </main>
+      </SidebarInset>
     )
   }
 
-  const tipoCambioUSDNIO = tipoCambio?.valor || 36.5
+  // Cálculos de Activos
+  const caja = cuentas?.find((c) => c.nombre === "Caja Dólares")?.saldo || 0
+  const bancos = cuentas?.find((c) => c.nombre === "Banco Lafise USD")?.saldo || 0
+  const inventarios = activosCorrientes?.find((a) => a.descripcion === "Inventarios")?.valor || 0
+  const cuentasPorCobrar = activosCorrientes?.find((a) => a.descripcion === "Cuentas por Cobrar")?.valor || 0
 
-  // Calculate Assets
-  let cajaUSD = 0
-  let bancosUSD = 0
-  cuentasFinancieras?.forEach((cuenta) => {
-    if (cuenta.moneda === "USD") {
-      if (cuenta.nombre.includes("Caja")) cajaUSD += cuenta.saldo || 0
-      if (cuenta.nombre.includes("Banco")) bancosUSD += cuenta.saldo || 0
-    } else if (cuenta.moneda === "NIO") {
-      if (cuenta.nombre.includes("Caja")) cajaUSD += (cuenta.saldo || 0) / tipoCambioUSDNIO
-      if (cuenta.nombre.includes("Banco")) bancosUSD += (cuenta.saldo || 0) / tipoCambioUSDNIO
-    }
-  })
-
-  const cuentasPorCobrar = clientes?.reduce((sum, c) => sum + (c.deuda || 0), 0) || 0
-  const totalActivosCirculantes = cajaUSD + bancosUSD + cuentasPorCobrar // Inventarios are 0 for now
-  const totalActivosNoCorrientes = activosNoCorrientes?.reduce((sum, a) => sum + (a.valor_neto || 0), 0) || 0
+  const totalActivosCirculantes = caja + bancos + inventarios + cuentasPorCobrar
+  const totalActivosNoCorrientes = (activosNoCorrientes || []).reduce((sum, a) => sum + (a.valor_neto || 0), 0)
   const totalActivos = totalActivosCirculantes + totalActivosNoCorrientes
 
-  // Calculate Liabilities
-  const totalPasivosCorrientes = pasivosCorrientes?.reduce((sum, p) => sum + (p.saldo || 0), 0) || 0
-  const totalPasivos = totalPasivosCorrientes
+  // Cálculos de Pasivos
+  const totalPasivosCorrientes = (pasivosCorrientes || []).reduce((sum, p) => sum + (p.saldo || 0), 0)
+  const totalPasivosNoCorrientes = (pasivosNoCorrientes || []).reduce((sum, p) => sum + (p.saldo || 0), 0)
+  const totalPasivos = totalPasivosCorrientes + totalPasivosNoCorrientes
 
-  // Calculate Equity (Utilidad Neta)
-  const totalIngresos =
-    transacciones?.filter((t) => t.tipo === "ingreso").reduce((sum, t) => sum + (t.monto || 0), 0) || 0
-  const totalEgresos =
-    transacciones?.filter((t) => t.tipo === "egreso").reduce((sum, t) => sum + (t.monto || 0), 0) || 0
-  const totalComisiones = comisiones?.reduce((sum, c) => sum + (c.monto || 0), 0) || 0
+  // Cálculo de Utilidad Neta para Patrimonio
+  const totalIngresos = (ingresosData || []).reduce((sum, t) => sum + (t.monto || 0), 0)
+  const totalEgresos = (egresosData || []).reduce((sum, t) => sum + (t.monto || 0), 0)
+  const totalComisionesPendientes = (comisionesData || []).reduce((sum, c) => sum + (c.monto || 0), 0)
+  const utilidadNeta = totalIngresos - totalEgresos - totalPasivosCorrientes - totalComisionesPendientes // Nueva fórmula
 
-  const utilidadNeta = totalIngresos - totalEgresos - totalPasivosCorrientes - totalComisiones // Simplified for now
-  const totalPatrimonio = utilidadNeta // Assuming no other equity components for now
-  const totalPasivosPatrimonio = totalPasivos + totalPatrimonio
-  const diferenciaBalance = totalActivos - totalPasivosPatrimonio
+  const totalPatrimonio = utilidadNeta // Asumiendo que la utilidad neta es el principal componente del patrimonio por ahora
+
+  const totalPasivosYPatrimonio = totalPasivos + totalPatrimonio
+  const diferenciaBalance = totalActivos - totalPasivosYPatrimonio
 
   return (
     <SidebarInset>
@@ -95,16 +97,13 @@ export default async function BalanceSheetPage() {
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <h1 className="text-lg font-semibold">Balance General</h1>
-        <div className="ml-auto flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-          <Wifi className="h-3 w-3" />
-          <span>Conectado</span>
-        </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4">
         <h2 className="text-2xl font-bold">Balance General</h2>
         <p className="text-muted-foreground">Estado financiero consolidado de Software Nicaragua</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Activos */}
           <Card>
             <CardHeader>
               <CardTitle>ACTIVOS</CardTitle>
@@ -112,48 +111,53 @@ export default async function BalanceSheetPage() {
             </CardHeader>
             <CardContent>
               <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Concepto</TableHead>
+                    <TableHead className="text-right">Valor USD</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell className="font-semibold">Activos Circulantes</TableCell>
-                    <TableCell></TableCell>
+                  <TableRow className="font-semibold">
+                    <TableCell>Activos Circulantes</TableCell>
+                    <TableCell />
                   </TableRow>
                   <TableRow>
-                    <TableCell className="pl-6">Caja</TableCell>
-                    <TableCell className="text-right text-green-amount">USD {cajaUSD.toFixed(2)}</TableCell>
+                    <TableCell className="pl-8">Caja</TableCell>
+                    <TableCell className="text-right text-green-amount">{caja.toFixed(2)}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell className="pl-6">Bancos</TableCell>
-                    <TableCell className="text-right text-green-amount">USD {bancosUSD.toFixed(2)}</TableCell>
+                    <TableCell className="pl-8">Bancos</TableCell>
+                    <TableCell className="text-right text-green-amount">{bancos.toFixed(2)}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell className="pl-6">Inventarios</TableCell>
-                    <TableCell className="text-right">0</TableCell>
+                    <TableCell className="pl-8">Inventarios</TableCell>
+                    <TableCell className="text-right text-green-amount">{inventarios.toFixed(2)}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell className="pl-6">Cuentas por Cobrar</TableCell>
-                    <TableCell className="text-right text-green-amount">USD {cuentasPorCobrar.toFixed(2)}</TableCell>
+                    <TableCell className="pl-8">Cuentas por Cobrar</TableCell>
+                    <TableCell className="text-right text-green-amount">{cuentasPorCobrar.toFixed(2)}</TableCell>
+                  </TableRow>
+                  <TableRow className="font-bold">
+                    <TableCell>Total Activos Circulantes</TableCell>
+                    <TableCell className="text-right text-green-amount">{totalActivosCirculantes.toFixed(2)}</TableCell>
                   </TableRow>
                   <TableRow className="font-semibold">
-                    <TableCell>Total Activos Circulantes</TableCell>
+                    <TableCell>Activos No Corrientes</TableCell>
                     <TableCell className="text-right text-green-amount">
-                      USD {totalActivosCirculantes.toFixed(2)}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-semibold">Activos No Corrientes</TableCell>
-                    <TableCell className="text-right text-green-amount">
-                      USD {totalActivosNoCorrientes.toFixed(2)}
+                      {totalActivosNoCorrientes.toFixed(2)}
                     </TableCell>
                   </TableRow>
                   <TableRow className="font-bold text-lg">
                     <TableCell>TOTAL ACTIVOS</TableCell>
-                    <TableCell className="text-right text-green-amount">USD {totalActivos.toFixed(2)}</TableCell>
+                    <TableCell className="text-right text-green-amount">{totalActivos.toFixed(2)}</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
 
+          {/* Pasivos y Patrimonio */}
           <Card>
             <CardHeader>
               <CardTitle>PASIVOS Y PATRIMONIO</CardTitle>
@@ -161,39 +165,54 @@ export default async function BalanceSheetPage() {
             </CardHeader>
             <CardContent>
               <Table>
-                <TableBody>
+                <TableHeader>
                   <TableRow>
-                    <TableCell className="font-semibold">Pasivos Corrientes</TableCell>
-                    <TableCell className="text-right text-red-600">USD {totalPasivosCorrientes.toFixed(2)}</TableCell>
+                    <TableHead>Concepto</TableHead>
+                    <TableHead className="text-right">Valor USD</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow className="font-semibold">
+                    <TableCell>Pasivos Corrientes</TableCell>
+                    <TableCell className="text-right text-red-amount">{totalPasivosCorrientes.toFixed(2)}</TableCell>
                   </TableRow>
                   <TableRow className="font-semibold">
+                    <TableCell>Pasivos No Corrientes</TableCell>
+                    <TableCell className="text-right text-red-amount">{totalPasivosNoCorrientes.toFixed(2)}</TableCell>
+                  </TableRow>
+                  <TableRow className="font-bold">
                     <TableCell>Total Pasivos</TableCell>
-                    <TableCell className="text-right text-red-600">USD {totalPasivos.toFixed(2)}</TableCell>
+                    <TableCell className="text-right text-red-amount">{totalPasivos.toFixed(2)}</TableCell>
+                  </TableRow>
+                  <TableRow className="font-semibold">
+                    <TableCell>Patrimonio</TableCell>
+                    <TableCell />
                   </TableRow>
                   <TableRow>
-                    <TableCell className="font-semibold">Patrimonio</TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="pl-6">Utilidad Neta</TableCell>
-                    <TableCell className={cn("text-right", utilidadNeta >= 0 ? "text-green-amount" : "text-red-600")}>
-                      USD {utilidadNeta.toFixed(2)}
+                    <TableCell className="pl-8">Utilidad Neta</TableCell>
+                    <TableCell
+                      className={cn("text-right", utilidadNeta >= 0 ? "text-green-amount" : "text-red-amount")}
+                    >
+                      {utilidadNeta.toFixed(2)}
                     </TableCell>
                   </TableRow>
-                  <TableRow className="font-semibold">
+                  <TableRow className="font-bold">
                     <TableCell>Total Patrimonio</TableCell>
                     <TableCell
-                      className={cn("text-right", totalPatrimonio >= 0 ? "text-green-amount" : "text-red-600")}
+                      className={cn("text-right", totalPatrimonio >= 0 ? "text-green-amount" : "text-red-amount")}
                     >
-                      USD {totalPatrimonio.toFixed(2)}
+                      {totalPatrimonio.toFixed(2)}
                     </TableCell>
                   </TableRow>
                   <TableRow className="font-bold text-lg">
                     <TableCell>TOTAL PASIVOS + PATRIMONIO</TableCell>
                     <TableCell
-                      className={cn("text-right", totalPasivosPatrimonio >= 0 ? "text-green-amount" : "text-red-600")}
+                      className={cn(
+                        "text-right",
+                        totalPasivosYPatrimonio >= 0 ? "text-green-amount" : "text-red-amount",
+                      )}
                     >
-                      USD {totalPasivosPatrimonio.toFixed(2)}
+                      {totalPasivosYPatrimonio.toFixed(2)}
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -202,25 +221,24 @@ export default async function BalanceSheetPage() {
           </Card>
         </div>
 
-        <Card>
+        <Card className="mt-6">
           <CardHeader>
             <CardTitle>Verificación de Balance</CardTitle>
             <p className="text-sm text-muted-foreground">Los activos deben ser iguales a pasivos + patrimonio</p>
           </CardHeader>
-          <CardContent>
-            <div className="flex justify-between text-lg font-semibold">
-              <span>Total Activos</span>
-              <span className="text-green-amount">USD {totalActivos.toFixed(2)}</span>
+          <CardContent className="grid gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Total Activos:</span>
+              <span className="font-medium text-green-amount">USD {totalActivos.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-lg font-semibold">
-              <span>Total Pasivos + Patrimonio</span>
-              <span className={cn(totalPasivosPatrimonio >= 0 ? "text-green-amount" : "text-red-600")}>
-                USD {totalPasivosPatrimonio.toFixed(2)}
-              </span>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Total Pasivos + Patrimonio:</span>
+              <span className="font-medium text-green-amount">USD {totalPasivosYPatrimonio.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-xl font-bold mt-4">
-              <span>Diferencia</span>
-              <span className={cn(diferenciaBalance === 0 ? "text-green-amount" : "text-red-600")}>
+            <Separator />
+            <div className="flex items-center justify-between font-bold">
+              <span>Diferencia:</span>
+              <span className={cn(diferenciaBalance === 0 ? "text-green-amount" : "text-red-amount")}>
                 USD {diferenciaBalance.toFixed(2)}
               </span>
             </div>

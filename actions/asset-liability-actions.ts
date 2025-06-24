@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server" // Asegúrate de que esta ruta sea correcta
+import { createClient } from "@/lib/supabase/server" // Importación directa del cliente de servidor
 
 export async function getAssetsAndLiabilities() {
   const supabase = await createClient()

@@ -1,29 +1,24 @@
 "use client"
 
-import { useActionState, useState, useEffect } from "react"
+import { useActionState, useEffect } from "react"
+import { addActivoNoCorriente, updateActivoNoCorriente } from "@/actions/asset-liability-actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { addActivoNoCorriente, updateActivoNoCorriente } from "@/actions/asset-liability-actions"
+import { toast } from "@/components/ui/use-toast"
+import { DialogFooter } from "@/components/ui/dialog"
 import type { Tables } from "@/lib/database.types"
 
 interface ActivoNoCorrienteFormProps {
-  initialData?: Tables<"activos_no_corrientes"> | null
+  initialData?: Tables<"activos_no_corrientes">
   onSuccess?: () => void
-  onCancel?: () => void
 }
 
-export function ActivoNoCorrienteForm({ initialData, onSuccess, onCancel }: ActivoNoCorrienteFormProps) {
+export default function ActivoNoCorrienteForm({ initialData, onSuccess }: ActivoNoCorrienteFormProps) {
+  // Restablecido a exportación por defecto
   const isEditing = !!initialData
   const action = isEditing ? updateActivoNoCorriente : addActivoNoCorriente
   const [state, formAction, isPending] = useActionState(action, null)
-  const { toast } = useToast()
-
-  const [descripcion, setDescripcion] = useState(initialData?.descripcion || "")
-  const [valor, setValor] = useState(initialData?.valor?.toString() || "")
-  const [depreciacion, setDepreciacion] = useState(initialData?.depreciacion?.toString() || "0")
-  const [valorNeto, setValorNeto] = useState(initialData?.valor_neto?.toString() || "")
 
   useEffect(() => {
     if (state?.success) {
@@ -33,86 +28,75 @@ export function ActivoNoCorrienteForm({ initialData, onSuccess, onCancel }: Acti
         variant: "default",
       })
       onSuccess?.()
-    } else if (state?.message) {
+    } else if (state?.success === false) {
       toast({
         title: "Error",
         description: state.message,
         variant: "destructive",
       })
     }
-  }, [state, toast, onSuccess])
-
-  useEffect(() => {
-    const val = Number.parseFloat(valor) || 0
-    const dep = Number.parseFloat(depreciacion) || 0
-    setValorNeto((val - dep).toFixed(2))
-  }, [valor, depreciacion])
+  }, [state, onSuccess])
 
   return (
-    <form action={formAction} className="grid gap-4">
-      {isEditing && <input type="hidden" name="id" value={initialData.id} />}
-      <div className="space-y-2">
-        <Label htmlFor="descripcion">Descripción</Label>
+    <form action={formAction} className="grid gap-4 py-4">
+      {isEditing && <Input type="hidden" name="id" defaultValue={initialData.id} />}
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="descripcion" className="text-right">
+          Descripción
+        </Label>
         <Input
           id="descripcion"
           name="descripcion"
-          placeholder="Ej: Equipo de oficina, Vehículo"
+          defaultValue={initialData?.descripcion || ""}
+          className="col-span-3"
           required
-          value={descripcion}
-          onChange={(e) => setDescripcion(e.target.value)}
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="valor">Valor Original (USD)</Label>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="valor" className="text-right">
+          Valor Original
+        </Label>
         <Input
           id="valor"
           name="valor"
           type="number"
           step="0.01"
-          placeholder="0.00"
+          defaultValue={initialData?.valor || 0}
+          className="col-span-3"
           required
-          value={valor}
-          onChange={(e) => setValor(e.target.value)}
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="depreciacion">Depreciación Acumulada (USD)</Label>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="depreciacion" className="text-right">
+          Depreciación Acumulada
+        </Label>
         <Input
           id="depreciacion"
           name="depreciacion"
           type="number"
           step="0.01"
-          placeholder="0.00"
-          value={depreciacion}
-          onChange={(e) => setDepreciacion(e.target.value)}
+          defaultValue={initialData?.depreciacion || 0}
+          className="col-span-3"
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="valor_neto">Valor Neto (USD)</Label>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="valor_neto" className="text-right">
+          Valor Neto
+        </Label>
         <Input
           id="valor_neto"
           name="valor_neto"
           type="number"
           step="0.01"
-          placeholder="0.00"
-          readOnly
-          value={valorNeto}
+          defaultValue={initialData?.valor_neto || 0}
+          className="col-span-3"
         />
       </div>
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
+      <DialogFooter>
         <Button type="submit" disabled={isPending}>
-          {isPending
-            ? isEditing
-              ? "Actualizando..."
-              : "Añadiendo..."
-            : isEditing
-              ? "Actualizar Activo"
-              : "Añadir Activo"}
+          {isPending ? "Guardando..." : isEditing ? "Actualizar Activo" : "Añadir Activo"}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   )
 }

@@ -16,6 +16,7 @@ interface ClientFormProps {
 }
 
 export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps) {
+  // Cambiado a export function
   const isEditing = !!initialData
   const action = isEditing ? updateClient : addClient
   const [state, formAction, isPending] = useActionState(action, null)

@@ -22,10 +22,10 @@ import { useState } from "react"
 
 interface PaymentHistoryCardProps {
   clienteId: string
-  historialPagos: Array<{ fecha: string; monto: number; descripcion?: string }>
+  payments: Array<{ fecha: string; monto: number; descripcion?: string }> // Cambiado a 'payments'
 }
 
-export function PaymentHistoryCard({ clienteId, historialPagos }: PaymentHistoryCardProps) {
+export function PaymentHistoryCard({ clienteId, payments }: PaymentHistoryCardProps) {
   const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false)
   const [isEditPaymentDialogOpen, setIsEditPaymentDialogOpen] = useState<{
     open: boolean
@@ -63,71 +63,76 @@ export function PaymentHistoryCard({ clienteId, historialPagos }: PaymentHistory
               </TableRow>
             </TableHeader>
             <TableBody>
-              {historialPagos.length === 0 ? (
+              {payments.length === 0 ? ( // Usando 'payments'
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground">
                     No hay historial de pagos.
                   </TableCell>
                 </TableRow>
               ) : (
-                historialPagos.map((pago, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{pago.fecha}</TableCell>
-                    <TableCell className="text-green-amount">USD {pago.monto?.toFixed(2)}</TableCell>
-                    <TableCell>{pago.descripcion || "N/A"}</TableCell>
-                    <TableCell className="flex gap-2">
-                      <Dialog
-                        open={isEditPaymentDialogOpen.open && isEditPaymentDialogOpen.data?.index === index}
-                        onOpenChange={(open) =>
-                          setIsEditPaymentDialogOpen({ open, data: open ? { ...pago, index } : null })
-                        }
-                      >
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="icon" className="h-8 w-8">
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Editar Pago</span>
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                          <DialogHeader>
-                            <DialogTitle>Editar Pago</DialogTitle>
-                          </DialogHeader>
-                          <PaymentForm
-                            clienteId={clienteId}
-                            initialData={{ ...pago, index }}
-                            onSuccess={() => setIsEditPaymentDialogOpen({ open: false, data: null })}
-                          />
-                        </DialogContent>
-                      </Dialog>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="icon" className="h-8 w-8">
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Eliminar Pago</span>
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta acción no se puede deshacer. Esto eliminará permanentemente este pago.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={async () => {
-                                await deletePayment(clienteId, index)
-                              }}
-                            >
-                              Eliminar
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                ))
+                payments.map(
+                  (
+                    pago,
+                    index, // Usando 'payments'
+                  ) => (
+                    <TableRow key={index}>
+                      <TableCell>{pago.fecha}</TableCell>
+                      <TableCell className="text-green-amount">USD {pago.monto?.toFixed(2)}</TableCell>
+                      <TableCell>{pago.descripcion || "N/A"}</TableCell>
+                      <TableCell className="flex gap-2">
+                        <Dialog
+                          open={isEditPaymentDialogOpen.open && isEditPaymentDialogOpen.data?.index === index}
+                          onOpenChange={(open) =>
+                            setIsEditPaymentDialogOpen({ open, data: open ? { ...pago, index } : null })
+                          }
+                        >
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="icon" className="h-8 w-8">
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Editar Pago</span>
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                              <DialogTitle>Editar Pago</DialogTitle>
+                            </DialogHeader>
+                            <PaymentForm
+                              clienteId={clienteId}
+                              initialData={{ ...pago, index }}
+                              onSuccess={() => setIsEditPaymentDialogOpen({ open: false, data: null })}
+                            />
+                          </DialogContent>
+                        </Dialog>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="icon" className="h-8 w-8">
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Eliminar Pago</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Esto eliminará permanentemente este pago.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={async () => {
+                                  await deletePayment(clienteId, index)
+                                }}
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ),
+                )
               )}
             </TableBody>
           </Table>

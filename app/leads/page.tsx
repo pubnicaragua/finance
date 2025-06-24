@@ -1,6 +1,7 @@
+import { createServerSupabase } from "@/lib/supabase/server"
+import { LeadForm } from "@/components/lead-form" // Importación nombrada
+import { LeadTable } from "./LeadTable" // Importación nombrada
 import { Button } from "@/components/ui/button"
-import { PlusIcon } from "lucide-react"
-import LeadForm from "@/components/lead-form"
 import {
   Dialog,
   DialogContent,
@@ -9,32 +10,41 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import LeadTable from "./LeadTable" // Importar el nuevo componente de tabla
+import { PlusIcon } from "lucide-react"
+
+export const revalidate = 0
 
 export default async function LeadsPage() {
+  const supabase = createServerSupabase()
+  const { data: leads, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching leads:", error)
+    return <div>Error al cargar leads: {error.message}</div>
+  }
+
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Gestión de Leads</h1>
+        <h1 className="text-2xl font-bold">Gestión de Leads</h1>
         <Dialog>
           <DialogTrigger asChild>
-            <Button>
-              <PlusIcon className="mr-2 h-4 w-4" />
-              Agregar Lead
+            <Button size="sm" className="h-8 gap-1">
+              <PlusIcon className="h-4 w-4" />
+              <span className="sr-only sm:not-sr-only">Añadir Lead</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Agregar Nuevo Lead</DialogTitle>
-              <DialogDescription>Completa los detalles para añadir un nuevo lead.</DialogDescription>
+              <DialogTitle>Añadir Nuevo Lead</DialogTitle>
+              <DialogDescription>Rellena los campos para añadir un nuevo lead a la base de datos.</DialogDescription>
             </DialogHeader>
             <LeadForm />
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Usar el componente LeadTable aquí */}
-      <LeadTable />
+      <LeadTable leads={leads || []} />
     </div>
   )
 }

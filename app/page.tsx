@@ -1,23 +1,13 @@
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/lib/supabase/server" // Importación directa del cliente de servidor
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Banknote, Users, TrendingUp, DollarSign, ArrowDownRight, Wifi, Landmark } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
-// No necesitamos 'redirect' si no vamos a redirigir por sesión
-// import { redirect } from "next/navigation"
 
 export default async function HomePage() {
-  const supabase = await createClient()
-
-  // Eliminamos la verificación de sesión y la redirección a login
-  // const {
-  //   data: { session },
-  // } = await supabase.auth.getSession()
-  // if (!session) {
-  //   redirect("/login")
-  // }
+  const supabase = await createClient() // Usar await
 
   // Fetch data for summary cards
   const { data: cuentasFinancieras, error: cuentasError } = await supabase

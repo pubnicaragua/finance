@@ -1,29 +1,62 @@
 import { createClient } from "@/lib/supabase/server"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import { Wifi } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { FolderKanban, DollarSign, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { format } from "date-fns"
+
+export const revalidate = 0
 
 export default async function ProjectSummaryPage() {
-  const supabase = createClient()
-  const { data: clientes, error: clientesError } = await supabase
-    .from("clientes")
-    .select("id, cliente, proyecto, tipo_software, estado, pais, costo_proyecto, abonado, deuda, fecha_vencimiento")
+  const supabase = await createClient()
 
-  if (clientesError) {
-    console.error("Error fetching clients for project summary:", clientesError)
+  const { data: projects, error: projectsError } = await supabase
+    .from("proyectos")
+    .select("*, clientes(cliente)") // Fetch related client name
+    .order("fecha_inicio", { ascending: false })
+
+  const { data: avances, error: avancesError } = await supabase.from("avances_proyecto").select("*")
+  const { data: alcances, error: alcancesError } = await supabase.from("alcances_desarrollo").select("*")
+
+  if (projectsError || avancesError || alcancesError) {
+    console.error("Error fetching project summary data:", projectsError || avancesError || alcancesError)
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4 text-red-500">
-        Error al cargar el resumen de proyectos: {clientesError.message}
-      </div>
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <h1 className="text-lg font-semibold">Resumen de Proyectos</h1>
+        </header>
+        <main className="flex flex-1 flex-col gap-4 p-4">
+          <h2 className="text-2xl font-bold">Resumen de Proyectos</h2>
+          <p className="text-red-500">Error al cargar el resumen de proyectos.</p>
+        </main>
+      </SidebarInset>
     )
   }
 
-  const totalCostoProyectos = clientes?.reduce((sum, c) => sum + (c.costo_proyecto || 0), 0) || 0
-  const totalAbonado = clientes?.reduce((sum, c) => sum + (c.abonado || 0), 0) || 0
-  const deudaPendiente = clientes?.reduce((sum, c) => sum + (c.deuda || 0), 0) || 0
+  const projectData = (projects || []).map((project) => {
+    const projectAvances = (avances || []).filter((avance) => avance.cliente_id === project.cliente_id)
+    const projectAlcances = (alcances || []).filter((alcance) => alcance.cliente_id === project.cliente_id)
+
+    const totalAvance =
+      projectAvances.length > 0
+        ? projectAvances.reduce((sum, avance) => sum + avance.porcentaje_avance, 0) / projectAvances.length
+        : 0
+
+    return {
+      ...project,
+      totalAvance: totalAvance.toFixed(2),
+      numAlcances: projectAlcances.length,
+      clientName: project.clientes?.cliente || "N/A", // Get client name
+    }
+  })
+
+  const totalCostoProyectos = projectData.reduce((sum, p) => sum + (p.costo_total || 0), 0)
+  const proyectosActivos = projectData.filter((p) => p.estado === "Activo").length
+  const proyectosCompletados = projectData.filter((p) => p.estado === "Completado").length
 
   return (
     <SidebarInset>
@@ -31,95 +64,97 @@ export default async function ProjectSummaryPage() {
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <h1 className="text-lg font-semibold">Resumen de Proyectos</h1>
-        <div className="ml-auto flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-          <Wifi className="h-3 w-3" />
-          <span>Conectado</span>
-        </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4">
-        <h2 className="text-2xl font-bold">Resumen de Proyectos por Cliente</h2>
-        <p className="text-muted-foreground">Visión general de los proyectos y su estado financiero.</p>
+        <h2 className="text-2xl font-bold">Visión General de Proyectos</h2>
+        <p className="text-muted-foreground">Estado y costos de los proyectos de desarrollo.</p>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Proyectos</CardTitle>
+              <FolderKanban className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{projectData.length}</div>
+              <p className="text-xs text-muted-foreground">Número total de proyectos</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Costo Total Proyectos</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-amount">${totalCostoProyectos.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">Suma de todos los costos de proyectos</p>
+              <div className="text-2xl font-bold">${totalCostoProyectos.toFixed(2)}</div>
+              <p className="text-xs text-muted-foreground">Suma de costos de todos los proyectos</p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Total Abonado</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-amount">${totalAbonado.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">Cantidad total abonada por clientes</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Deuda Pendiente</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">${deudaPendiente.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">Deuda total de todos los clientes</p>
+              <div className="text-2xl font-bold">{proyectosActivos}</div>
+              <p className="text-xs text-muted-foreground">Proyectos en curso</p>
             </CardContent>
           </Card>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Detalle de Proyectos por Cliente</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Haz clic en un cliente para ver el detalle y seguimiento del proyecto.
-            </p>
+            <CardTitle>Listado Detallado de Proyectos</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Nombre</TableHead>
                     <TableHead>Cliente</TableHead>
-                    <TableHead>Proyecto</TableHead>
-                    <TableHead>Tipo Software</TableHead>
                     <TableHead>Estado</TableHead>
-                    <TableHead>País</TableHead>
-                    <TableHead>Etapa del Proyecto</TableHead>
-                    <TableHead>Costo Proyecto (USD)</TableHead>
-                    <TableHead>Abonado (USD)</TableHead>
-                    <TableHead>Deuda (USD)</TableHead>
-                    <TableHead>Fecha Vencimiento</TableHead>
+                    <TableHead>Fecha Inicio</TableHead>
+                    <TableHead>Fecha Fin</TableHead>
+                    <TableHead className="text-right">Costo Total</TableHead>
+                    <TableHead className="text-right">Avance Promedio (%)</TableHead>
+                    <TableHead className="text-right">Alcances</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {clientes?.length === 0 ? (
+                  {projectData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center text-muted-foreground">
-                        No hay proyectos registrados aún.
+                      <TableCell colSpan={8} className="text-center text-muted-foreground">
+                        No hay proyectos registrados.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    clientes?.map((cliente) => (
-                      <TableRow key={cliente.id}>
-                        <TableCell>{cliente.cliente}</TableCell>
-                        <TableCell>{cliente.proyecto}</TableCell>
-                        <TableCell>{cliente.tipo_software || "N/A"}</TableCell>
-                        <TableCell>{cliente.estado || "N/A"}</TableCell>
-                        <TableCell>{cliente.pais || "N/A"}</TableCell>
-                        <TableCell>{"-"}</TableCell>
-                        <TableCell className="text-green-amount">
-                          ${cliente.costo_proyecto?.toFixed(2) || "0.00"}
+                    projectData.map((proyecto) => (
+                      <TableRow key={proyecto.id}>
+                        <TableCell>{proyecto.nombre}</TableCell>
+                        <TableCell>{proyecto.clientName}</TableCell> {/* Display client name */}
+                        <TableCell>
+                          <span
+                            className={cn(
+                              "px-2 py-1 rounded-full text-xs font-medium",
+                              proyecto.estado === "Activo" && "bg-blue-100 text-blue-800",
+                              proyecto.estado === "Completado" && "bg-green-100 text-green-800",
+                              proyecto.estado === "Pendiente" && "bg-yellow-100 text-yellow-800",
+                              proyecto.estado === "Cancelado" && "bg-red-100 text-red-800",
+                            )}
+                          >
+                            {proyecto.estado}
+                          </span>
                         </TableCell>
-                        <TableCell className="text-green-amount">${cliente.abonado?.toFixed(2) || "0.00"}</TableCell>
-                        <TableCell
-                          className={cn(cliente.deuda && cliente.deuda > 0 ? "text-red-600" : "text-green-amount")}
-                        >
-                          ${cliente.deuda?.toFixed(2) || "0.00"}
+                        <TableCell>
+                          {proyecto.fecha_inicio ? format(new Date(proyecto.fecha_inicio), "dd/MM/yyyy") : "N/A"}
                         </TableCell>
-                        <TableCell>{cliente.fecha_vencimiento || "N/A"}</TableCell>
+                        <TableCell>
+                          {proyecto.fecha_fin ? format(new Date(proyecto.fecha_fin), "dd/MM/yyyy") : "N/A"}
+                        </TableCell>
+                        <TableCell className="text-right">${proyecto.costo_total?.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{proyecto.totalAvance}</TableCell>
+                        <TableCell className="text-right">{proyecto.numAlcances}</TableCell>
                       </TableRow>
                     ))
                   )}

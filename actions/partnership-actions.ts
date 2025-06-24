@@ -1,9 +1,9 @@
 // actions/partnership-actions.ts
 
-import { createClient } from "@/utils/supabase/server"
+import { createServerSupabase } from "@/lib/supabase/server"
 
 export async function getPartnerships() {
-  const supabase = await createClient()
+  const supabase = await createServerSupabase()
 
   const { data: partnerships, error } = await supabase.from("partnerships").select("*")
 
@@ -16,7 +16,7 @@ export async function getPartnerships() {
 }
 
 export async function getPartnership(id: string) {
-  const supabase = await createClient()
+  const supabase = await createServerSupabase()
 
   const { data: partnership, error } = await supabase.from("partnerships").select("*").eq("id", id).single()
 
@@ -29,7 +29,7 @@ export async function getPartnership(id: string) {
 }
 
 export async function createPartnership(name: string, description: string, imageUrl: string, websiteUrl: string) {
-  const supabase = await createClient()
+  const supabase = await createServerSupabase()
 
   const { data, error } = await supabase
     .from("partnerships")
@@ -51,6 +51,9 @@ export async function createPartnership(name: string, description: string, image
   return data
 }
 
+// Asegura que addPartnership sea una exportación nombrada
+export const addPartnership = createPartnership
+
 export async function updatePartnership(
   id: string,
   name: string,
@@ -58,7 +61,7 @@ export async function updatePartnership(
   imageUrl: string,
   websiteUrl: string,
 ) {
-  const supabase = await createClient()
+  const supabase = await createServerSupabase()
 
   const { data, error } = await supabase
     .from("partnerships")
@@ -80,7 +83,7 @@ export async function updatePartnership(
 }
 
 export async function deletePartnership(id: string) {
-  const supabase = await createClient()
+  const supabase = await createServerSupabase()
 
   const { error } = await supabase.from("partnerships").delete().eq("id", id)
 

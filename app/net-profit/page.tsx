@@ -1,42 +1,53 @@
+import { createClient } from "@/lib/supabase/server"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import { Wifi } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
-import { createClient } from "@/lib/supabase/server"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { CheckCircle2, XCircle } from "lucide-react"
 
 export default async function NetProfitPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
-  // Fetch data for Net Profit calculation
-  const { data: transacciones, error: transaccionesError } = await supabase.from("transacciones").select("monto, tipo")
+  const { data: ingresosData, error: ingresosError } = await supabase
+    .from("transacciones")
+    .select("monto")
+    .eq("tipo", "ingreso")
+  const { data: egresosData, error: egresosError } = await supabase
+    .from("transacciones")
+    .select("monto")
+    .eq("tipo", "egreso")
+  const { data: pasivosCorrientesData, error: pcError } = await supabase.from("pasivos_corrientes").select("saldo")
+  const { data: comisionesData, error: comisionesError } = await supabase
+    .from("comisiones")
+    .select("monto")
+    .eq("pagada", false) // Asumiendo que solo las comisiones no pagadas afectan la utilidad neta
 
-  const { data: pasivosCorrientes, error: pcError } = await supabase.from("pasivos_corrientes").select("saldo")
-
-  const { data: comisiones, error: comisionesError } = await supabase.from("comisiones").select("monto")
-
-  if (transaccionesError || pcError || comisionesError) {
-    console.error("Error fetching data for Net Profit:", {
-      transaccionesError,
-      pcError,
-      comisionesError,
-    })
+  if (ingresosError || egresosError || pcError || comisionesError) {
+    console.error("Error fetching net profit data:", ingresosError || egresosError || pcError || comisionesError)
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4 text-red-500">
-        Error al cargar la Utilidad Neta.
-      </div>
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <h1 className="text-lg font-semibold">Utilidad Neta y Distribución</h1>
+        </header>
+        <main className="flex flex-1 flex-col gap-4 p-4">
+          <h2 className="text-2xl font-bold">Utilidad Neta y Distribución</h2>
+          <p className="text-red-500">Error al cargar los datos de utilidad neta.</p>
+        </main>
+      </SidebarInset>
     )
   }
 
-  const totalIngresos =
-    transacciones?.filter((t) => t.tipo === "ingreso").reduce((sum, t) => sum + (t.monto || 0), 0) || 0
-  const totalEgresos =
-    transacciones?.filter((t) => t.tipo === "egreso").reduce((sum, t) => sum + (t.monto || 0), 0) || 0
-  const totalPasivosCorrientes = pasivosCorrientes?.reduce((sum, p) => sum + (p.saldo || 0), 0) || 0
-  const totalComisiones = comisiones?.reduce((sum, c) => sum + (c.monto || 0), 0) || 0
+  const totalIngresos = (ingresosData || []).reduce((sum, t) => sum + (t.monto || 0), 0)
+  const totalEgresos = (egresosData || []).reduce((sum, t) => sum + (t.monto || 0), 0)
+  const totalPasivosCorrientes = (pasivosCorrientesData || []).reduce((sum, p) => sum + (p.saldo || 0), 0)
+  const totalComisiones = (comisionesData || []).reduce((sum, c) => sum + (c.monto || 0), 0)
 
+  // Nueva fórmula de Utilidad Neta
   const utilidadNeta = totalIngresos - totalEgresos - totalPasivosCorrientes - totalComisiones
+
   const dividendosEmpresa = utilidadNeta * 0.7
   const distribucionInversionistas = utilidadNeta * 0.3
 
@@ -46,10 +57,6 @@ export default async function NetProfitPage() {
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <h1 className="text-lg font-semibold">Utilidad Neta y Distribución</h1>
-        <div className="ml-auto flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-          <Wifi className="h-3 w-3" />
-          <span>Conectado</span>
-        </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4">
         <h2 className="text-2xl font-bold">Utilidad Neta y Distribución</h2>
@@ -60,37 +67,40 @@ export default async function NetProfitPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Utilidad Neta</CardTitle>
+              <CardTitle>Utilidad Neta</CardTitle>
+              <p className="text-sm text-muted-foreground">La empresa está generando ganancias</p>
             </CardHeader>
             <CardContent>
-              <div className={cn("text-2xl font-bold", utilidadNeta >= 0 ? "text-green-amount" : "text-red-600")}>
+              <div className={cn("text-2xl font-bold", utilidadNeta >= 0 ? "text-green-amount" : "text-red-amount")}>
                 USD {utilidadNeta.toFixed(2)}
               </div>
-              <p className="text-xs text-muted-foreground">
-                {utilidadNeta >= 0 ? "Ganancia del período" : "Pérdida del período"}
-              </p>
+              <p className="text-xs text-muted-foreground">Ganancia del período</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Dividendos Empresa (70%)</CardTitle>
+              <CardTitle>Dividendos Empresa (70%)</CardTitle>
+              <p className="text-sm text-muted-foreground">Reinversión y crecimiento empresarial</p>
             </CardHeader>
             <CardContent>
-              <div className={cn("text-2xl font-bold", dividendosEmpresa >= 0 ? "text-green-amount" : "text-red-600")}>
+              <div
+                className={cn("text-2xl font-bold", dividendosEmpresa >= 0 ? "text-green-amount" : "text-red-amount")}
+              >
                 USD {dividendosEmpresa.toFixed(2)}
               </div>
-              <p className="text-xs text-muted-foreground">Reinversión y crecimiento empresarial</p>
+              <p className="text-xs text-muted-foreground">Para desarrollo y operaciones</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Distribución Inversionistas (30%)</CardTitle>
+              <CardTitle>Distribución Inversionistas (30%)</CardTitle>
+              <p className="text-sm text-muted-foreground">Retorno para inversionistas</p>
             </CardHeader>
             <CardContent>
               <div
                 className={cn(
                   "text-2xl font-bold",
-                  distribucionInversionistas >= 0 ? "text-green-amount" : "text-red-600",
+                  distribucionInversionistas >= 0 ? "text-green-amount" : "text-red-amount",
                 )}
               >
                 USD {distribucionInversionistas.toFixed(2)}
@@ -100,7 +110,7 @@ export default async function NetProfitPage() {
           </Card>
         </div>
 
-        <Card>
+        <Card className="mt-6">
           <CardHeader>
             <CardTitle>Cálculo Detallado de Utilidad Neta</CardTitle>
             <p className="text-sm text-muted-foreground">
@@ -109,69 +119,71 @@ export default async function NetProfitPage() {
           </CardHeader>
           <CardContent>
             <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Concepto</TableHead>
+                  <TableHead className="text-right">Monto USD</TableHead>
+                  <TableHead>Operación</TableHead>
+                </TableRow>
+              </TableHeader>
               <TableBody>
                 <TableRow>
                   <TableCell>Total Ingresos</TableCell>
-                  <TableCell className="text-right text-green-amount">USD {totalIngresos.toFixed(2)}</TableCell>
-                  <TableCell className="text-right font-bold">+</TableCell>
+                  <TableCell className="text-right text-green-amount">{totalIngresos.toFixed(2)}</TableCell>
+                  <TableCell>+</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Total Egresos</TableCell>
-                  <TableCell className="text-right text-red-600">USD {totalEgresos.toFixed(2)}</TableCell>
-                  <TableCell className="text-right font-bold">-</TableCell>
+                  <TableCell className="text-right text-red-amount">{totalEgresos.toFixed(2)}</TableCell>
+                  <TableCell>-</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Total Pasivos Corrientes</TableCell>
-                  <TableCell className="text-right text-red-600">USD {totalPasivosCorrientes.toFixed(2)}</TableCell>
-                  <TableCell className="text-right font-bold">-</TableCell>
+                  <TableCell className="text-right text-red-amount">{totalPasivosCorrientes.toFixed(2)}</TableCell>
+                  <TableCell>-</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Total Comisiones</TableCell>
-                  <TableCell className="text-right text-red-600">USD {totalComisiones.toFixed(2)}</TableCell>
-                  <TableCell className="text-right font-bold">-</TableCell>
+                  <TableCell className="text-right text-red-amount">{totalComisiones.toFixed(2)}</TableCell>
+                  <TableCell>-</TableCell>
                 </TableRow>
                 <TableRow className="font-bold text-lg">
                   <TableCell>UTILIDAD NETA</TableCell>
-                  <TableCell className={cn("text-right", utilidadNeta >= 0 ? "text-green-amount" : "text-red-600")}>
-                    USD {utilidadNeta.toFixed(2)}
+                  <TableCell className={cn("text-right", utilidadNeta >= 0 ? "text-green-amount" : "text-red-amount")}>
+                    {utilidadNeta.toFixed(2)}
                   </TableCell>
-                  <TableCell className="text-right font-bold">=</TableCell>
+                  <TableCell>=</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div>
-                <h3 className="font-semibold">Ingresos</h3>
-                <p className="text-green-amount">USD {totalIngresos.toFixed(2)}</p>
-                <p className="text-muted-foreground text-sm">Total de entradas</p>
-              </div>
-              <div>
-                <h3 className="font-semibold">Egresos</h3>
-                <p className="text-red-600">USD {totalEgresos.toFixed(2)}</p>
-                <p className="text-muted-foreground text-sm">Gastos operativos</p>
-              </div>
-              <div>
-                <h3 className="font-semibold">Pasivos</h3>
-                <p className="text-red-600">USD {totalPasivosCorrientes.toFixed(2)}</p>
-                <p className="text-muted-foreground text-sm">Obligaciones</p>
-              </div>
-              <div>
-                <h3 className="font-semibold">Comisiones</h3>
-                <p className="text-red-600">USD {totalComisiones.toFixed(2)}</p>
-                <p className="text-muted-foreground text-sm">Vendedores (4%)</p>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="mt-6">
           <CardHeader>
             <CardTitle>Análisis y Recomendaciones</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="min-h-[100px] rounded-xl bg-muted/50 flex items-center justify-center text-muted-foreground">
-              Contenido de análisis y recomendaciones (próximamente)
-            </div>
+            {utilidadNeta >= 0 ? (
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle2 className="h-5 w-5" />
+                <span>Situación Financiera Positiva</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-red-600">
+                <XCircle className="h-5 w-5" />
+                <span>Situación Financiera Negativa</span>
+              </div>
+            )}
+            <ul className="list-disc pl-5 mt-2 text-muted-foreground">
+              <li>Dividendos empresa: USD {dividendosEmpresa.toFixed(2)}</li>
+              <li>Para inversionistas: USD {distribucionInversionistas.toFixed(2)}</li>
+              {utilidadNeta >= 0 ? (
+                <li>Considerar reinversión estratégica para crecimiento.</li>
+              ) : (
+                <li>Analizar egresos y fuentes de ingresos para mejorar la rentabilidad.</li>
+              )}
+            </ul>
           </CardContent>
         </Card>
       </main>

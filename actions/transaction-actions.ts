@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/utils/supabase/server" // Asegúrate de que esta ruta sea correcta
+import { createClient } from "@/lib/supabase/server" // Importación directa del cliente de servidor
 import type { Tables } from "@/lib/database.types"
 
 export async function createTransaction(formData: FormData) {

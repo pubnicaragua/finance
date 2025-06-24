@@ -530,6 +530,33 @@ export type Database = {
         }
         Relationships: []
       }
+      pasivos_no_corrientes: {
+        Row: {
+          created_at: string | null
+          descripcion: string
+          fecha_vencimiento: string | null
+          id: string
+          saldo: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          descripcion: string
+          fecha_vencimiento?: string | null
+          id?: string
+          saldo: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          descripcion?: string
+          fecha_vencimiento?: string | null
+          id?: string
+          saldo?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       proyectos: {
         Row: {
           cliente_id: string | null

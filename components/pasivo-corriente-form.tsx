@@ -1,28 +1,24 @@
 "use client"
 
-import { useActionState, useState, useEffect } from "react"
+import { useActionState, useEffect } from "react"
+import { addPasivoCorriente, updatePasivoCorriente } from "@/actions/asset-liability-actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { addPasivoCorriente, updatePasivoCorriente } from "@/actions/asset-liability-actions"
+import { toast } from "@/components/ui/use-toast"
+import { DialogFooter } from "@/components/ui/dialog"
 import type { Tables } from "@/lib/database.types"
 
 interface PasivoCorrienteFormProps {
-  initialData?: Tables<"pasivos_corrientes"> | null
+  initialData?: Tables<"pasivos_corrientes">
   onSuccess?: () => void
-  onCancel?: () => void
 }
 
-export function PasivoCorrienteForm({ initialData, onSuccess, onCancel }: PasivoCorrienteFormProps) {
+export default function PasivoCorrienteForm({ initialData, onSuccess }: PasivoCorrienteFormProps) {
+  // Restablecido a exportación por defecto
   const isEditing = !!initialData
   const action = isEditing ? updatePasivoCorriente : addPasivoCorriente
   const [state, formAction, isPending] = useActionState(action, null)
-  const { toast } = useToast()
-
-  const [descripcion, setDescripcion] = useState(initialData?.descripcion || "")
-  const [debe, setDebe] = useState(initialData?.debe?.toString() || "")
-  const [saldo, setSaldo] = useState(initialData?.saldo?.toString() || "")
 
   useEffect(() => {
     if (state?.success) {
@@ -32,73 +28,61 @@ export function PasivoCorrienteForm({ initialData, onSuccess, onCancel }: Pasivo
         variant: "default",
       })
       onSuccess?.()
-    } else if (state?.message) {
+    } else if (state?.success === false) {
       toast({
         title: "Error",
         description: state.message,
         variant: "destructive",
       })
     }
-  }, [state, toast, onSuccess])
+  }, [state, onSuccess])
 
   return (
-    <form action={formAction} className="grid gap-4">
-      {isEditing && <input type="hidden" name="id" value={initialData.id} />}
-      <div className="space-y-2">
-        <Label htmlFor="descripcion">Descripción</Label>
+    <form action={formAction} className="grid gap-4 py-4">
+      {isEditing && <Input type="hidden" name="id" defaultValue={initialData.id} />}
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="descripcion" className="text-right">
+          Descripción
+        </Label>
         <Input
           id="descripcion"
           name="descripcion"
-          placeholder="Ej: Cuentas por pagar, Préstamos a corto plazo"
+          defaultValue={initialData?.descripcion || ""}
+          className="col-span-3"
           required
-          value={descripcion}
-          onChange={(e) => setDescripcion(e.target.value)}
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="debe">Debe (USD)</Label>
-        <Input
-          id="debe"
-          name="debe"
-          type="number"
-          step="0.01"
-          placeholder="0.00"
-          required
-          value={debe}
-          onChange={(e) => setDebe(e.target.value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="saldo">Saldo (USD)</Label>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="saldo" className="text-right">
+          Saldo
+        </Label>
         <Input
           id="saldo"
           name="saldo"
           type="number"
           step="0.01"
-          placeholder="0.00"
+          defaultValue={initialData?.saldo || 0}
+          className="col-span-3"
           required
-          value={saldo}
-          onChange={(e) => setSaldo(e.target.value)}
         />
       </div>
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={isPending}>
-          {isPending
-            ? isEditing
-              ? "Actualizando..."
-              : "Añadiendo..."
-            : isEditing
-              ? "Actualizar Pasivo"
-              : "Añadir Pasivo"}
-        </Button>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="fecha_vencimiento" className="text-right">
+          Fecha de Vencimiento
+        </Label>
+        <Input
+          id="fecha_vencimiento"
+          name="fecha_vencimiento"
+          type="date"
+          defaultValue={initialData?.fecha_vencimiento || new Date().toISOString().split("T")[0]}
+          className="col-span-3"
+        />
       </div>
+      <DialogFooter>
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Guardando..." : isEditing ? "Actualizar Pasivo" : "Añadir Pasivo"}
+        </Button>
+      </DialogFooter>
     </form>
   )
 }
-
-// Alias so pages/components can import { CurrentLiabilityForm }
-export default PasivoCorrienteForm
-export { PasivoCorrienteForm as CurrentLiabilityForm }

@@ -1,75 +1,47 @@
 "use client"
 
-import { useActionState, useState, useEffect } from "react"
+import { useActionState, useEffect, useState } from "react"
+import { createTransaction, updateTransaction } from "@/actions/transaction-actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/hooks/use-toast"
-import { createTransaction, updateTransaction } from "@/actions/transaction-actions"
+import { toast } from "@/components/ui/use-toast"
+import { DialogFooter } from "@/components/ui/dialog"
+import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client"
 import type { Tables } from "@/lib/database.types"
 
 interface TransactionFormProps {
-  initialData?: Tables<"transacciones"> | null
-  cuentasFinancieras: Array<{ id: string; nombre: string; moneda: string }>
-  clientes: Array<{ id: string; cliente: string }>
+  initialData?: Tables<"transacciones">
   onSuccess?: () => void
-  onCancel?: () => void
 }
 
-const expenseCategories = [
-  "Salarios",
-  "Alquiler",
-  "Servicios Públicos",
-  "Materiales de Oficina",
-  "Marketing",
-  "Viajes",
-  "Mantenimiento",
-  "Software/Suscripciones",
-  "Impuestos",
-  "Depreciación",
-  "Intereses",
-  "Otros Gastos Operativos",
-]
-
-const incomeCategories = [
-  "Venta de Software",
-  "Servicios de Consultoría",
-  "Licencias",
-  "Mantenimiento y Soporte",
-  "Desarrollo a Medida",
-  "Otros Ingresos",
-]
-
-const vendedores = ["Ileana", "Edxel", "Nahuel"]
-
-// Cambiado de 'export default function' a 'export function'
-export function TransactionForm({
-  initialData,
-  cuentasFinancieras,
-  clientes,
-  onSuccess,
-  onCancel,
-}: TransactionFormProps) {
+export default function TransactionForm({ initialData, onSuccess }: TransactionFormProps) {
+  // Restablecido a exportación por defecto
   const isEditing = !!initialData
   const action = isEditing ? updateTransaction : createTransaction
   const [state, formAction, isPending] = useActionState(action, null)
-  const { toast } = useToast()
+  const [transactionType, setTransactionType] = useState(initialData?.tipo || "ingreso")
+  const [applyCommission, setApplyCommission] = useState(initialData?.aplicar_comision || false)
+  const [clientes, setClientes] = useState<Tables<"clientes">[]>([])
+  const [cuentas, setCuentas] = useState<Tables<"cuentas_financieras">[]>([])
 
-  const [tipo, setTipo] = useState(initialData?.tipo || "ingreso")
-  const [concepto, setConcepto] = useState(initialData?.concepto || "")
-  const [monto, setMonto] = useState(initialData?.monto?.toString() || "")
-  const [fecha, setFecha] = useState(initialData?.fecha || "")
-  const [cuentaId, setCuentaId] = useState(initialData?.cuenta_id || "")
-  const [detalle, setDetalle] = useState(initialData?.detalle || "")
-  const [clienteId, setClienteId] = useState(initialData?.cliente_id || "")
-  const [tipoIngreso, setTipoIngreso] = useState(initialData?.tipo_ingreso || "")
-  const [tipoEgreso, setTipoEgreso] = useState(initialData?.tipo_egreso || "")
-  const [aplicarComision, setAplicarComision] = useState(initialData?.aplicar_comision || false)
-  const [vendedorComision, setVendedorComision] = useState(initialData?.vendedor_comision || "N/A")
-  const [comisionAplicada, setComisionAplicada] = useState(initialData?.comision_aplicada?.toString() || "")
+  useEffect(() => {
+    const fetchDependencies = async () => {
+      const supabase = createBrowserSupabaseClient()
+      const { data: clientesData, error: clientesError } = await supabase.from("clientes").select("id, cliente")
+      const { data: cuentasData, error: cuentasError } = await supabase.from("cuentas_financieras").select("id, nombre")
+
+      if (clientesError) console.error("Error fetching clients:", clientesError)
+      if (cuentasError) console.error("Error fetching accounts:", cuentasError)
+
+      setClientes(clientesData || [])
+      setCuentas(cuentasData || [])
+    }
+    fetchDependencies()
+  }, [])
 
   useEffect(() => {
     if (state?.success) {
@@ -79,32 +51,28 @@ export function TransactionForm({
         variant: "default",
       })
       onSuccess?.()
-    } else if (state?.message) {
+    } else if (state?.success === false) {
       toast({
         title: "Error",
         description: state.message,
         variant: "destructive",
       })
     }
-  }, [state, toast, onSuccess])
-
-  useEffect(() => {
-    if (aplicarComision && tipo === "ingreso") {
-      const calculatedCommission = (Number.parseFloat(monto) || 0) * 0.04 // 4% commission
-      setComisionAplicada(calculatedCommission.toFixed(2))
-    } else {
-      setComisionAplicada("")
-    }
-  }, [aplicarComision, monto, tipo])
+  }, [state, onSuccess])
 
   return (
-    <form action={formAction} className="grid gap-4">
-      {isEditing && <input type="hidden" name="id" value={initialData.id} />}
-
-      <div className="space-y-2">
-        <Label htmlFor="tipo">Tipo de Transacción</Label>
-        <Select name="tipo" value={tipo} onValueChange={setTipo}>
-          <SelectTrigger>
+    <form action={formAction} className="grid gap-4 py-4">
+      {isEditing && <Input type="hidden" name="id" defaultValue={initialData.id} />}
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="tipo" className="text-right">
+          Tipo
+        </Label>
+        <Select
+          name="tipo"
+          defaultValue={initialData?.tipo || "ingreso"}
+          onValueChange={(value: "ingreso" | "egreso") => setTransactionType(value)}
+        >
+          <SelectTrigger className="col-span-3">
             <SelectValue placeholder="Selecciona tipo" />
           </SelectTrigger>
           <SelectContent>
@@ -114,182 +82,186 @@ export function TransactionForm({
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="concepto">Concepto</Label>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="concepto" className="text-right">
+          Concepto
+        </Label>
         <Input
           id="concepto"
           name="concepto"
-          placeholder="Concepto de la transacción"
+          defaultValue={initialData?.concepto || ""}
+          className="col-span-3"
           required
-          value={concepto}
-          onChange={(e) => setConcepto(e.target.value)}
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="monto">Monto</Label>
-          <Input
-            id="monto"
-            name="monto"
-            type="number"
-            step="0.01"
-            placeholder="0.00"
-            required
-            value={monto}
-            onChange={(e) => setMonto(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="fecha">Fecha</Label>
-          <Input
-            id="fecha"
-            name="fecha"
-            type="date"
-            required
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
-          />
-        </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="monto" className="text-right">
+          Monto
+        </Label>
+        <Input
+          id="monto"
+          name="monto"
+          type="number"
+          step="0.01"
+          defaultValue={initialData?.monto || 0}
+          className="col-span-3"
+          required
+        />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="cuenta_id">Cuenta Financiera</Label>
-        <Select name="cuenta_id" value={cuentaId} onValueChange={setCuentaId}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecciona una cuenta" />
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="fecha" className="text-right">
+          Fecha
+        </Label>
+        <Input
+          id="fecha"
+          name="fecha"
+          type="date"
+          defaultValue={initialData?.fecha || new Date().toISOString().split("T")[0]}
+          className="col-span-3"
+          required
+        />
+      </div>
+
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="cuenta_id" className="text-right">
+          Cuenta
+        </Label>
+        <Select name="cuenta_id" defaultValue={initialData?.cuenta_id || ""}>
+          <SelectTrigger className="col-span-3">
+            <SelectValue placeholder="Selecciona cuenta" />
           </SelectTrigger>
           <SelectContent>
-            {cuentasFinancieras.map((cuenta) => (
+            {cuentas.map((cuenta) => (
               <SelectItem key={cuenta.id} value={cuenta.id}>
-                {cuenta.nombre} ({cuenta.moneda})
+                {cuenta.nombre}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="detalle">Detalle (Opcional)</Label>
-        <Textarea
-          id="detalle"
-          name="detalle"
-          placeholder="Detalles adicionales de la transacción"
-          value={detalle}
-          onChange={(e) => setDetalle(e.target.value)}
-        />
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="detalle" className="text-right">
+          Detalle
+        </Label>
+        <Textarea id="detalle" name="detalle" defaultValue={initialData?.detalle || ""} className="col-span-3" />
       </div>
 
-      {tipo === "ingreso" && (
+      {transactionType === "ingreso" && (
         <>
-          <div className="space-y-2">
-            <Label htmlFor="cliente_id">Cliente (Opcional)</Label>
-            <Select name="cliente_id" value={clienteId} onValueChange={setClienteId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona un cliente" />
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="cliente_id" className="text-right">
+              Cliente (Opcional)
+            </Label>
+            <Select name="cliente_id" defaultValue={initialData?.cliente_id || "N/A"}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Selecciona cliente" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="N/A">N/A</SelectItem>
-                {clientes.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.cliente}
+                {clientes.map((cliente) => (
+                  <SelectItem key={cliente.id} value={cliente.id}>
+                    {cliente.cliente}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="tipo_ingreso">Tipo de Ingreso</Label>
-            <Select name="tipo_ingreso" value={tipoIngreso} onValueChange={setTipoIngreso}>
-              <SelectTrigger>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="tipo_ingreso" className="text-right">
+              Tipo Ingreso
+            </Label>
+            <Select name="tipo_ingreso" defaultValue={initialData?.tipo_ingreso || "Venta de Software"}>
+              <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Selecciona tipo de ingreso" />
               </SelectTrigger>
               <SelectContent>
-                {incomeCategories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
+                <SelectItem value="Venta de Software">Venta de Software</SelectItem>
+                <SelectItem value="Servicios de Consultoría">Servicios de Consultoría</SelectItem>
+                <SelectItem value="Mantenimiento">Mantenimiento</SelectItem>
+                <SelectItem value="Otros">Otros</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="aplicar_comision" className="text-right">
+              Aplicar Comisión
+            </Label>
             <Checkbox
               id="aplicar_comision"
               name="aplicar_comision"
-              checked={aplicarComision}
-              onCheckedChange={(checked) => setAplicarComision(checked as boolean)}
+              checked={applyCommission}
+              onCheckedChange={(checked) => setApplyCommission(!!checked)}
+              className="col-span-3"
             />
-            <Label htmlFor="aplicar_comision">Aplicar Comisión (4%)</Label>
           </div>
-          {aplicarComision && (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="vendedor_comision">Vendedor</Label>
-                <Select name="vendedor_comision" value={vendedorComision} onValueChange={setVendedorComision}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona vendedor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vendedores.map((vendedor) => (
-                      <SelectItem key={vendedor} value={vendedor}>
-                        {vendedor}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="comision_aplicada">Comisión Aplicada (USD)</Label>
-                <Input
-                  id="comision_aplicada"
-                  name="comision_aplicada"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  readOnly
-                  value={comisionAplicada}
-                />
-              </div>
+          {applyCommission && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="vendedor_comision" className="text-right">
+                Vendedor Comisión
+              </Label>
+              <Select name="vendedor_comision" defaultValue={initialData?.vendedor_comision || "N/A"}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecciona vendedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="N/A">N/A</SelectItem>
+                  <SelectItem value="Ileana">Ileana</SelectItem>
+                  <SelectItem value="Edxel">Edxel</SelectItem>
+                  <SelectItem value="Nahuel">Nahuel</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {applyCommission && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="comision_aplicada" className="text-right">
+                Comisión Aplicada
+              </Label>
+              <Input
+                id="comision_aplicada"
+                name="comision_aplicada"
+                type="number"
+                step="0.01"
+                defaultValue={initialData?.comision_aplicada || 0}
+                className="col-span-3"
+              />
             </div>
           )}
         </>
       )}
 
-      {tipo === "egreso" && (
-        <div className="space-y-2">
-          <Label htmlFor="tipo_egreso">Tipo de Egreso</Label>
-          <Select name="tipo_egreso" value={tipoEgreso} onValueChange={setTipoEgreso}>
-            <SelectTrigger>
+      {transactionType === "egreso" && (
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="tipo_egreso" className="text-right">
+            Tipo Egreso
+          </Label>
+          <Select name="tipo_egreso" defaultValue={initialData?.tipo_egreso || "Salarios"}>
+            <SelectTrigger className="col-span-3">
               <SelectValue placeholder="Selecciona tipo de egreso" />
             </SelectTrigger>
             <SelectContent>
-              {expenseCategories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
+              <SelectItem value="Salarios">Salarios</SelectItem>
+              <SelectItem value="Herramientas">Herramientas</SelectItem>
+              <SelectItem value="Servidores">Servidores</SelectItem>
+              <SelectItem value="Dominios">Dominios</SelectItem>
+              <SelectItem value="Marketing">Marketing</SelectItem>
+              <SelectItem value="Oficina">Oficina</SelectItem>
+              <SelectItem value="Viajes">Viajes</SelectItem>
+              <SelectItem value="Impuestos">Impuestos</SelectItem>
+              <SelectItem value="Otros">Otros</SelectItem>
             </SelectContent>
           </Select>
         </div>
       )}
 
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
+      <DialogFooter>
         <Button type="submit" disabled={isPending}>
-          {isPending
-            ? isEditing
-              ? "Actualizando..."
-              : "Añadiendo..."
-            : isEditing
-              ? "Actualizar Transacción"
-              : "Añadir Transacción"}
+          {isPending ? "Guardando..." : isEditing ? "Actualizar Transacción" : "Añadir Transacción"}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   )
 }
-
-export default TransactionForm

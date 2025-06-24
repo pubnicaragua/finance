@@ -2,7 +2,6 @@
 import Link from "next/link"
 import {
   LayoutDashboard,
-  Upload,
   Users,
   UserPlus,
   BarChart,
@@ -41,11 +40,11 @@ const navItems = [
     label: "Navegación",
     items: [
       { title: "Dashboard General", href: "/", icon: LayoutDashboard },
-      { title: "Cargador de Datos", href: "/data-loader", icon: Upload },
+      // { title: "Cargador de Datos", href: "/data-loader", icon: Upload }, // Eliminado
       { title: "Clientes", href: "/clients", icon: Users },
       { title: "Leads", href: "/leads", icon: UserPlus },
       { title: "Resumen de Proyectos", href: "/project-summary", icon: BarChart },
-      { title: "Partnerships", href: "/partnerships", icon: Handshake },
+      { title: "Partnerships", href: "/partnerships", icon: Handshake }, // Corregido a Partnerships
       { title: "Ingresos y Egresos", href: "/transactions", icon: DollarSign },
       { title: "Proyecciones", href: "/projections", icon: Calendar },
       { title: "Comisiones", href: "/commissions", icon: Percent },
