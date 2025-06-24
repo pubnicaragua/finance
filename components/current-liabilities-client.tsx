@@ -1,7 +1,8 @@
 "use client"
+import { useState } from "react"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import { Wifi, Plus, Edit, Trash2 } from "lucide-react"
+import { Wifi, Edit, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -17,23 +18,25 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { PasivoCorrienteForm } from "@/components/pasivo-corriente-form"
-import { deletePasivoCorriente } from "@/actions/asset-liability-actions"
+import { CurrentLiabilityForm } from "@/components/pasivo-corriente-form"
+import { deleteLiability } from "@/actions/asset-liability-actions"
 
-type Pasivo = {
+type CurrentLiability = {
   id: string
-  descripcion: string
-  debe: number | null
-  saldo: number | null
+  description: string
+  amountDue: number | null
+  outstandingBalance: number | null
 }
 
 export default function CurrentLiabilitiesClient({
-  pasivos,
+  initialData,
 }: {
-  pasivos: Pasivo[]
+  initialData: CurrentLiability[]
 }) {
-  const totalDebe = pasivos.reduce((s, p) => s + (p.debe ?? 0), 0) ?? 0
-  const totalSaldo = pasivos.reduce((s, p) => s + (p.saldo ?? 0), 0) ?? 0
+  const [rows, setRows] = useState(initialData)
+
+  const totalAmountDue = rows.reduce((s, p) => s + (p.amountDue ?? 0), 0) ?? 0
+  const totalOutstandingBalance = rows.reduce((s, p) => s + (p.outstandingBalance ?? 0), 0) ?? 0
 
   return (
     <SidebarInset className="flex-1">
@@ -55,20 +58,7 @@ export default function CurrentLiabilitiesClient({
 
         {/* Botón agregar */}
         <div className="flex items-center justify-end">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Agregar Pasivo
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Añadir Nuevo Pasivo Corriente</DialogTitle>
-              </DialogHeader>
-              <PasivoCorrienteForm />
-            </DialogContent>
-          </Dialog>
+          <CurrentLiabilityForm onSuccess={(nl) => setRows((r) => [...r, nl])} />
         </div>
 
         {/* Tabla */}
@@ -89,18 +79,18 @@ export default function CurrentLiabilitiesClient({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pasivos.length === 0 ? (
+                  {rows.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center text-muted-foreground">
                         No hay pasivos corrientes registrados aún.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    pasivos.map((p) => (
+                    rows.map((p) => (
                       <TableRow key={p.id}>
-                        <TableCell>{p.descripcion}</TableCell>
-                        <TableCell className="text-red-600">USD {p.debe?.toFixed(2)}</TableCell>
-                        <TableCell className="text-red-600">USD {p.saldo?.toFixed(2)}</TableCell>
+                        <TableCell>{p.description}</TableCell>
+                        <TableCell className="text-red-600">USD {p.amountDue?.toFixed(2)}</TableCell>
+                        <TableCell className="text-red-600">USD {p.outstandingBalance?.toFixed(2)}</TableCell>
                         <TableCell className="flex gap-2">
                           {/* Editar */}
                           <Dialog>
@@ -114,7 +104,12 @@ export default function CurrentLiabilitiesClient({
                               <DialogHeader>
                                 <DialogTitle>Editar Pasivo Corriente</DialogTitle>
                               </DialogHeader>
-                              <PasivoCorrienteForm initialData={p} />
+                              <CurrentLiabilityForm
+                                initialData={p}
+                                onSuccess={(updatedLiability) =>
+                                  setRows(rows.map((row) => (row.id === p.id ? updatedLiability : row)))
+                                }
+                              />
                             </DialogContent>
                           </Dialog>
 
@@ -135,7 +130,7 @@ export default function CurrentLiabilitiesClient({
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={async () => await deletePasivoCorriente(p.id)}>
+                                <AlertDialogAction onClick={async () => await deleteLiability(p.id)}>
                                   Eliminar
                                 </AlertDialogAction>
                               </AlertDialogFooter>
@@ -148,8 +143,8 @@ export default function CurrentLiabilitiesClient({
                   {/* Totales */}
                   <TableRow className="font-bold">
                     <TableCell>TOTAL</TableCell>
-                    <TableCell className="text-red-600">USD {totalDebe.toFixed(2)}</TableCell>
-                    <TableCell className="text-red-600">USD {totalSaldo.toFixed(2)}</TableCell>
+                    <TableCell className="text-red-600">USD {totalAmountDue.toFixed(2)}</TableCell>
+                    <TableCell className="text-red-600">USD {totalOutstandingBalance.toFixed(2)}</TableCell>
                     <TableCell />
                   </TableRow>
                 </TableBody>
@@ -166,11 +161,11 @@ export default function CurrentLiabilitiesClient({
           <CardContent>
             <div className="flex justify-between text-lg font-semibold">
               <span>Total Debe</span>
-              <span className="text-red-600">USD {totalDebe.toFixed(2)}</span>
+              <span className="text-red-600">USD {totalAmountDue.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-lg font-semibold">
               <span>Total Saldo Pendiente</span>
-              <span className="text-red-600">USD {totalSaldo.toFixed(2)}</span>
+              <span className="text-red-600">USD {totalOutstandingBalance.toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>

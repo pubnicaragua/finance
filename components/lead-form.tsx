@@ -16,6 +16,7 @@ interface LeadFormProps {
   onCancel?: () => void
 }
 
+// Cambiado de 'export default function' a 'export function'
 export function LeadForm({ initialData, onSuccess, onCancel }: LeadFormProps) {
   const isEditing = !!initialData
   const action = isEditing ? updateLead : addLead
@@ -172,3 +173,5 @@ export function LeadForm({ initialData, onSuccess, onCancel }: LeadFormProps) {
     </form>
   )
 }
+
+export default LeadForm

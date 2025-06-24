@@ -1,22 +1,40 @@
-import CurrentLiabilitiesClient from "@/components/current-liabilities-client"
-import { createClient } from "@/lib/supabase/server"
+import { Button } from "@/components/ui/button"
+import { PlusIcon } from "lucide-react"
+import CurrentLiabilityForm from "@/components/pasivo-corriente-form"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import LiabilitiesTable from "@/components/LiabilitiesTable" // Importar el nuevo componente de tabla
 
 export default async function CurrentLiabilitiesPage() {
-  const supabase = createClient()
-  const { data: pasivos = [], error } = await supabase
-    .from("pasivos_corrientes")
-    .select("*")
-    .order("created_at", { ascending: false })
-
-  if (error) {
-    // Puedes personalizar este fallback si lo deseas
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4 text-red-500">
-        Error al cargar los pasivos corrientes: {error.message}
+  return (
+    <div className="flex flex-col gap-4 p-4 md:p-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Pasivos Corrientes</h1>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusIcon className="mr-2 h-4 w-4" />
+              Agregar Pasivo
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Agregar Nuevo Pasivo Corriente</DialogTitle>
+              <DialogDescription>Completa los detalles para añadir un nuevo pasivo corriente.</DialogDescription>
+            </DialogHeader>
+            <CurrentLiabilityForm />
+          </DialogContent>
+        </Dialog>
       </div>
-    )
-  }
 
-  // Server Component puro: sólo pasa los datos al Client Component
-  return <CurrentLiabilitiesClient pasivos={pasivos} />
+      {/* Usar el componente LiabilitiesTable aquí */}
+      <LiabilitiesTable />
+    </div>
+  )
 }

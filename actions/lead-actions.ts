@@ -1,69 +1,62 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
-import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
+import { createClient } from "@/utils/supabase/server" // Asegúrate de que esta ruta sea correcta
+import type { Tables } from "@/lib/database.types"
 
 export async function addLead(formData: FormData) {
-  const supabase = createClient()
-  const newLead: TablesInsert<"leads"> = {
+  const supabase = await createClient()
+  const leadData: Partial<Tables<"leads">> = {
     cliente: formData.get("cliente") as string,
     proyecto: formData.get("proyecto") as string,
     tipo_software: formData.get("tipo_software") as string,
     pais: formData.get("pais") as string,
     proyeccion_usd: Number.parseFloat(formData.get("proyeccion_usd") as string),
-    estado: formData.get("estado") as string,
+    estado: formData.get("estado") as Tables<"leads">["estado"],
     canal_contacto: formData.get("canal_contacto") as string,
     fecha_ultimo_contacto: formData.get("fecha_ultimo_contacto") as string,
-    seguimiento: JSON.parse((formData.get("seguimiento") as string) || "[]"), // Assuming JSON string
+    seguimiento: JSON.parse(formData.get("seguimiento") as string),
   }
 
-  const { error } = await supabase.from("leads").insert(newLead)
+  const { data, error } = await supabase.from("leads").insert([leadData]).select()
 
   if (error) {
     console.error("Error adding lead:", error)
-    return { success: false, message: `Error al añadir lead: ${error.message}` }
+    return { success: false, message: error.message }
   }
-
-  revalidatePath("/leads")
-  return { success: true, message: "Lead añadido exitosamente." }
+  return { success: true, message: "Lead añadido exitosamente", data: data[0] }
 }
 
 export async function updateLead(formData: FormData) {
-  const supabase = createClient()
+  const supabase = await createClient()
   const id = formData.get("id") as string
-  const updatedLead: TablesUpdate<"leads"> = {
+  const leadData: Partial<Tables<"leads">> = {
     cliente: formData.get("cliente") as string,
     proyecto: formData.get("proyecto") as string,
     tipo_software: formData.get("tipo_software") as string,
     pais: formData.get("pais") as string,
     proyeccion_usd: Number.parseFloat(formData.get("proyeccion_usd") as string),
-    estado: formData.get("estado") as string,
+    estado: formData.get("estado") as Tables<"leads">["estado"],
     canal_contacto: formData.get("canal_contacto") as string,
     fecha_ultimo_contacto: formData.get("fecha_ultimo_contacto") as string,
-    seguimiento: JSON.parse((formData.get("seguimiento") as string) || "[]"), // Assuming JSON string
+    seguimiento: JSON.parse(formData.get("seguimiento") as string),
   }
 
-  const { error } = await supabase.from("leads").update(updatedLead).eq("id", id)
+  const { data, error } = await supabase.from("leads").update(leadData).eq("id", id).select()
 
   if (error) {
     console.error("Error updating lead:", error)
-    return { success: false, message: `Error al actualizar lead: ${error.message}` }
+    return { success: false, message: error.message }
   }
-
-  revalidatePath("/leads")
-  return { success: true, message: "Lead actualizado exitosamente." }
+  return { success: true, message: "Lead actualizado exitosamente", data: data[0] }
 }
 
 export async function deleteLead(id: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { error } = await supabase.from("leads").delete().eq("id", id)
 
   if (error) {
     console.error("Error deleting lead:", error)
-    return { success: false, message: `Error al eliminar lead: ${error.message}` }
+    return { success: false, message: error.message }
   }
-
-  revalidatePath("/leads")
-  return { success: true, message: "Lead eliminado exitosamente." }
+  return { success: true, message: "Lead eliminado exitosamente" }
 }

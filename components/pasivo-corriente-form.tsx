@@ -98,3 +98,7 @@ export function PasivoCorrienteForm({ initialData, onSuccess, onCancel }: Pasivo
     </form>
   )
 }
+
+// Alias so pages/components can import { CurrentLiabilityForm }
+export default PasivoCorrienteForm
+export { PasivoCorrienteForm as CurrentLiabilityForm }

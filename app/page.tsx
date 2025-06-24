@@ -1,15 +1,23 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/utils/supabase/server"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Banknote, Users, TrendingUp, DollarSign, ArrowDownRight, Wifi, Landmark } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from "recharts"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+// No necesitamos 'redirect' si no vamos a redirigir por sesión
+// import { redirect } from "next/navigation"
 
 export default async function HomePage() {
-  const supabase = createClient()
+  const supabase = await createClient()
+
+  // Eliminamos la verificación de sesión y la redirección a login
+  // const {
+  //   data: { session },
+  // } = await supabase.auth.getSession()
+  // if (!session) {
+  //   redirect("/login")
+  // }
 
   // Fetch data for summary cards
   const { data: cuentasFinancieras, error: cuentasError } = await supabase
@@ -22,7 +30,7 @@ export default async function HomePage() {
 
   const { data: transacciones, error: transaccionesError } = await supabase
     .from("transacciones")
-    .select("id, monto, tipo, fecha") // Fetch fecha for monthly grouping
+    .select("id, monto, tipo, created_at") // Añadir created_at para agrupar por mes
 
   if (cuentasError || clientesError || transaccionesError) {
     console.error("Error fetching dashboard data:", {
@@ -42,11 +50,11 @@ export default async function HomePage() {
   const totalBancosUSD = cuentasFinancieras?.find((c) => c.nombre === "Banco Lafise USD")?.saldo || 0
   const totalDeudaClientes = clientes?.reduce((sum, c) => sum + (c.deuda || 0), 0) || 0
 
-  const totalIngresosGlobal =
+  const totalIngresos =
     transacciones?.filter((t) => t.tipo === "ingreso").reduce((sum, t) => sum + (t.monto || 0), 0) || 0
-  const totalEgresosGlobal =
+  const totalEgresos =
     transacciones?.filter((t) => t.tipo === "egreso").reduce((sum, t) => sum + (t.monto || 0), 0) || 0
-  const utilidadNeta = totalIngresosGlobal - totalEgresosGlobal // Simplificado, la fórmula completa se verá en Utilidad Neta
+  const utilidadNeta = totalIngresos - totalEgresos // Simplificado, la fórmula completa se verá en Utilidad Neta
 
   // Clients by country (basic aggregation)
   const clientsByCountry: { [key: string]: number } = {}
@@ -56,34 +64,26 @@ export default async function HomePage() {
     }
   })
 
-  // Monthly Income vs Expenses Data for Chart
-  const monthlyDataMap = new Map<string, { ingresos: number; egresos: number }>()
+  // Monthly Summary Data (for chart)
+  const monthlyData: { [key: string]: { ingresos: number; egresos: number } } = {}
 
   transacciones?.forEach((t) => {
-    if (t.fecha && t.monto !== null) {
-      const date = new Date(t.fecha)
-      const monthYear = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}`
+    const date = new Date(t.created_at)
+    const monthYear = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}`
 
-      if (!monthlyDataMap.has(monthYear)) {
-        monthlyDataMap.set(monthYear, { ingresos: 0, egresos: 0 })
-      }
+    if (!monthlyData[monthYear]) {
+      monthlyData[monthYear] = { ingresos: 0, egresos: 0 }
+    }
 
-      const currentMonthData = monthlyDataMap.get(monthYear)!
-      if (t.tipo === "ingreso") {
-        currentMonthData.ingresos += t.monto
-      } else if (t.tipo === "egreso") {
-        currentMonthData.egresos += t.monto
-      }
+    if (t.tipo === "ingreso") {
+      monthlyData[monthYear].ingresos += t.monto || 0
+    } else if (t.tipo === "egreso") {
+      monthlyData[monthYear].egresos += t.monto || 0
     }
   })
 
-  const monthlyChartData = Array.from(monthlyDataMap.entries())
-    .map(([monthYear, data]) => ({
-      month: monthYear,
-      Ingresos: data.ingresos,
-      Egresos: data.egresos,
-    }))
-    .sort((a, b) => a.month.localeCompare(b.month)) // Sort by month
+  // Sort months for consistent chart display
+  const sortedMonths = Object.keys(monthlyData).sort()
 
   return (
     <SidebarInset>
@@ -150,7 +150,7 @@ export default async function HomePage() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-amount">${totalIngresosGlobal.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-green-amount">${totalIngresos.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">Ingresos totales</p>
             </CardContent>
           </Card>
@@ -160,75 +160,67 @@ export default async function HomePage() {
               <ArrowDownRight className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">${totalEgresosGlobal.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-red-600">${totalEgresos.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">Gastos totales</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Monthly Summary Section - Chart */}
+        {/* Monthly Summary Section (Chart) */}
         <Card>
           <CardHeader>
-            <CardTitle>Resumen Mensual de Ingresos vs Egresos</CardTitle>
-            <p className="text-sm text-muted-foreground">Comparación de flujo de efectivo por mes</p>
+            <CardTitle>Resumen Mensual</CardTitle>
+            <p className="text-sm text-muted-foreground">Ingresos y Egresos totales por mes</p>
           </CardHeader>
           <CardContent>
-            {monthlyChartData.length === 0 ? (
-              <div className="h-[200px] rounded-xl bg-muted/50 flex items-center justify-center text-muted-foreground">
-                No hay datos de transacciones para mostrar el gráfico mensual.
-              </div>
-            ) : (
-              <ChartContainer
-                config={{
-                  Ingresos: {
-                    label: "Ingresos",
-                    color: "hsl(var(--green-amount))",
-                  },
-                  Egresos: {
-                    label: "Egresos",
-                    color: "hsl(var(--destructive))",
-                  },
-                }}
-                className="h-[300px] w-full"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={monthlyChartData}
-                    margin={{
-                      top: 20,
-                      right: 30,
-                      left: 20,
-                      bottom: 5,
-                    }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Legend />
-                    <Line type="monotone" dataKey="Ingresos" stroke="var(--color-Ingresos)" activeDot={{ r: 8 }} />
-                    <Line type="monotone" dataKey="Egresos" stroke="var(--color-Egresos)" activeDot={{ r: 8 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            )}
+            <div className="flex h-[200px] w-full items-end justify-around rounded-md bg-muted/50 p-4">
+              {sortedMonths.length === 0 ? (
+                <div className="text-muted-foreground">No hay datos de transacciones para mostrar.</div>
+              ) : (
+                sortedMonths.map((month) => {
+                  const data = monthlyData[month]
+                  const maxAmount = Math.max(data.ingresos, data.egresos, 1) // Ensure at least 1 to avoid division by zero
+                  const ingresosHeight = (data.ingresos / maxAmount) * 150 // Max height 150px
+                  const egresosHeight = (data.egresos / maxAmount) * 150 // Max height 150px
+
+                  return (
+                    <div key={month} className="flex flex-col items-center gap-2">
+                      <div className="flex h-[150px] items-end gap-1">
+                        <div
+                          className="w-8 rounded-t-lg bg-green-amount"
+                          style={{ height: `${ingresosHeight}px` }}
+                          title={`Ingresos ${month}: $${data.ingresos.toFixed(2)}`}
+                        />
+                        <div
+                          className="w-8 rounded-t-lg bg-red-600"
+                          style={{ height: `${egresosHeight}px` }}
+                          title={`Egresos ${month}: $${data.egresos.toFixed(2)}`}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground">{month.slice(5)}</span>{" "}
+                      {/* Show only month part */}
+                    </div>
+                  )
+                })
+              )}
+            </div>
           </CardContent>
         </Card>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <Card>
             <CardHeader>
-              <CardTitle>Ingresos vs Egresos (Total)</CardTitle>
-              <p className="text-sm text-muted-foreground">Comparación global</p>
+              <CardTitle>Ingresos vs Egresos</CardTitle>
+              <p className="text-sm text-muted-foreground">Comparación total</p>
             </CardHeader>
             <CardContent>
               <div className="flex justify-between text-lg font-semibold">
                 <span>Ingresos</span>
-                <span className="text-green-amount">${totalIngresosGlobal.toFixed(2)}</span>
+                <span className="text-green-amount">${totalIngresos.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-lg font-semibold">
                 <span>Egresos</span>
-                <span className="text-red-600">${totalEgresosGlobal.toFixed(2)}</span>
+                <span className="text-red-600">${totalEgresos.toFixed(2)}</span>
               </div>
             </CardContent>
           </Card>

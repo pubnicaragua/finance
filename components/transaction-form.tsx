@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
-import { addTransaction, updateTransaction } from "@/actions/transaction-actions"
+import { createTransaction, updateTransaction } from "@/actions/transaction-actions"
 import type { Tables } from "@/lib/database.types"
 
 interface TransactionFormProps {
@@ -45,6 +45,7 @@ const incomeCategories = [
 
 const vendedores = ["Ileana", "Edxel", "Nahuel"]
 
+// Cambiado de 'export default function' a 'export function'
 export function TransactionForm({
   initialData,
   cuentasFinancieras,
@@ -53,7 +54,7 @@ export function TransactionForm({
   onCancel,
 }: TransactionFormProps) {
   const isEditing = !!initialData
-  const action = isEditing ? updateTransaction : addTransaction
+  const action = isEditing ? updateTransaction : createTransaction
   const [state, formAction, isPending] = useActionState(action, null)
   const { toast } = useToast()
 
@@ -290,3 +291,5 @@ export function TransactionForm({
     </form>
   )
 }
+
+export default TransactionForm
