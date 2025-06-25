@@ -1,62 +1,82 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server" // Importación directa del cliente de servidor
-import type { Tables } from "@/lib/database.types"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
+import { revalidatePath } from "next/cache"
 
-export async function addLead(formData: FormData) {
-  const supabase = await createClient()
-  const leadData: Partial<Tables<"leads">> = {
-    cliente: formData.get("cliente") as string,
-    proyecto: formData.get("proyecto") as string,
-    tipo_software: formData.get("tipo_software") as string,
-    pais: formData.get("pais") as string,
-    proyeccion_usd: Number.parseFloat(formData.get("proyeccion_usd") as string),
-    estado: formData.get("estado") as Tables<"leads">["estado"],
-    canal_contacto: formData.get("canal_contacto") as string,
-    fecha_ultimo_contacto: formData.get("fecha_ultimo_contacto") as string,
-    seguimiento: JSON.parse(formData.get("seguimiento") as string),
-  }
-
-  const { data, error } = await supabase.from("leads").insert([leadData]).select()
-
-  if (error) {
-    console.error("Error adding lead:", error)
-    return { success: false, message: error.message }
-  }
-  return { success: true, message: "Lead añadido exitosamente", data: data[0] }
+function getSupabaseServerClient() {
+  const cookieStore = cookies()
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
+      },
+      set(name: string, value: string, options: any) {
+        try {
+          cookieStore.set({ name, value, ...options })
+        } catch (error) {
+          console.warn("Could not set cookie from server:", error)
+        }
+      },
+      remove(name: string, options: any) {
+        try {
+          cookieStore.set({ name, value: "", ...options })
+        } catch (error) {
+          console.warn("Could not remove cookie from server:", error)
+        }
+      },
+    },
+  })
 }
 
-export async function updateLead(formData: FormData) {
-  const supabase = await createClient()
-  const id = formData.get("id") as string
-  const leadData: Partial<Tables<"leads">> = {
-    cliente: formData.get("cliente") as string,
-    proyecto: formData.get("proyecto") as string,
-    tipo_software: formData.get("tipo_software") as string,
-    pais: formData.get("pais") as string,
-    proyeccion_usd: Number.parseFloat(formData.get("proyeccion_usd") as string),
-    estado: formData.get("estado") as Tables<"leads">["estado"],
-    canal_contacto: formData.get("canal_contacto") as string,
-    fecha_ultimo_contacto: formData.get("fecha_ultimo_contacto") as string,
-    seguimiento: JSON.parse(formData.get("seguimiento") as string),
+export async function createLead(
+  prevState: any,
+  data: { nombre: string; email: string; telefono: string; estado: string },
+) {
+  console.log("--- Server Action: createLead called ---")
+  console.log("Server: Received data:", data)
+
+  const supabase = getSupabaseServerClient()
+  const { data: newLead, error } = await supabase.from("leads").insert([data])
+
+  if (error) {
+    console.error("Error creating lead:", error)
+    return { success: false, message: `Error al crear lead: ${error.message}` }
   }
 
-  const { data, error } = await supabase.from("leads").update(leadData).eq("id", id).select()
+  revalidatePath("/leads")
+  return { success: true, message: "Lead creado exitosamente." }
+}
+
+export async function updateLead(
+  prevState: any,
+  data: { id: string; nombre: string; email: string; telefono: string; estado: string },
+) {
+  console.log("--- Server Action: updateLead called ---")
+  console.log("Server: Received data:", data)
+
+  const supabase = getSupabaseServerClient()
+  const { id, ...updateData } = data
+  const { data: updatedLead, error } = await supabase.from("leads").update(updateData).eq("id", id)
 
   if (error) {
     console.error("Error updating lead:", error)
-    return { success: false, message: error.message }
+    return { success: false, message: `Error al actualizar lead: ${error.message}` }
   }
-  return { success: true, message: "Lead actualizado exitosamente", data: data[0] }
+
+  revalidatePath("/leads")
+  return { success: true, message: "Lead actualizado exitosamente." }
 }
 
 export async function deleteLead(id: string) {
-  const supabase = await createClient()
+  const supabase = getSupabaseServerClient()
   const { error } = await supabase.from("leads").delete().eq("id", id)
 
   if (error) {
     console.error("Error deleting lead:", error)
-    return { success: false, message: error.message }
+    return { success: false, message: `Error al eliminar lead: ${error.message}` }
   }
-  return { success: true, message: "Lead eliminado exitosamente" }
+
+  revalidatePath("/leads")
+  return { success: true, message: "Lead eliminado exitosamente." }
 }

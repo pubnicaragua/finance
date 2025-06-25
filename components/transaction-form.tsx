@@ -1,66 +1,86 @@
 "use client"
 
-import { useActionState, useEffect, useState } from "react"
-import { createTransaction, updateTransaction } from "@/actions/transaction-actions"
+import type React from "react"
+import { useActionState, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { toast } from "@/components/ui/use-toast"
-import { DialogFooter } from "@/components/ui/dialog"
-import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { useToast } from "@/hooks/use-toast"
+import { createTransaction, updateTransaction } from "@/actions/transaction-actions"
 import type { Tables } from "@/lib/database.types"
 
 interface TransactionFormProps {
-  initialData?: Tables<"transacciones">
+  initialData?: Tables<"transacciones"> | null
   onSuccess?: () => void
+  onCancel?: () => void
 }
 
-export function TransactionForm({ initialData, onSuccess }: TransactionFormProps) {
+export function TransactionForm({ initialData, onSuccess, onCancel }: TransactionFormProps) {
   const isEditing = !!initialData
   const action = isEditing ? updateTransaction : createTransaction
   const [state, formAction, isPending] = useActionState(action, null)
-  const [transactionType, setTransactionType] = useState<"ingreso" | "egreso">(initialData?.tipo ?? "ingreso")
-  const [applyCommission, setApplyCommission] = useState(initialData?.aplicar_comision ?? false)
-  const [clientes, setClientes] = useState<Tables<"clientes">[]>([])
-  const [cuentas, setCuentas] = useState<Tables<"cuentas_financieras">[]>([])
+  const { toast } = useToast()
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const supabase = createBrowserSupabaseClient()
-      const { data: cData } = await supabase.from("clientes").select("id, cliente")
-      const { data: aData } = await supabase.from("cuentas_financieras").select("id, nombre")
-      setClientes(cData ?? [])
-      setCuentas(aData ?? [])
-    }
-    fetchData()
-  }, [])
+  const [tipo, setTipo] = useState<"ingreso" | "egreso">(initialData?.tipo || "ingreso")
+  const [monto, setMonto] = useState(initialData?.monto?.toString() || "")
+  const [vendedor, setVendedor] = useState(initialData?.vendedor || "")
+  const [comision, setComision] = useState(initialData?.comision?.toString() || "")
+
+  const showComisionFields = tipo === "ingreso"
 
   useEffect(() => {
     if (state?.success) {
-      toast({ title: "Éxito", description: state.message })
+      toast({
+        title: "Éxito",
+        description: state.message,
+        variant: "default",
+      })
       onSuccess?.()
-    } else if (state?.success === false) {
-      toast({ title: "Error", description: state.message, variant: "destructive" })
+    } else if (state?.message) {
+      toast({
+        title: "Error",
+        description: state.message,
+        variant: "destructive",
+      })
     }
-  }, [state, onSuccess])
+  }, [state, toast, onSuccess])
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const formData = new FormData(event.currentTarget)
+
+    const data = {
+      ...(isEditing && { id: initialData.id }),
+      fecha: formData.get("fecha") as string,
+      tipo: formData.get("tipo") as "ingreso" | "egreso",
+      monto: Number.parseFloat(formData.get("monto") as string),
+      descripcion: formData.get("descripcion") as string,
+      categoria: formData.get("categoria") as string,
+      vendedor: showComisionFields ? (formData.get("vendedor") as string) : null,
+      comision: showComisionFields ? Number.parseFloat(formData.get("comision") as string) : null,
+    }
+    console.log("Client: Submitting data:", data)
+    formAction(data)
+  }
 
   return (
-    <form action={formAction} className="grid gap-4 py-4">
-      {isEditing && <Input type="hidden" name="id" defaultValue={initialData.id} />}
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="tipo" className="text-right">
-          Tipo
-        </Label>
-        <Select
-          name="tipo"
-          defaultValue={transactionType}
-          onValueChange={(value) => setTransactionType(value as "ingreso" | "egreso")}
-        >
-          <SelectTrigger className="col-span-3">
-            <SelectValue placeholder="Tipo" />
+    <form onSubmit={handleSubmit} className="grid gap-4">
+      <div className="space-y-2">
+        <Label htmlFor="fecha">Fecha</Label>
+        <Input
+          id="fecha"
+          name="fecha"
+          type="date"
+          required
+          defaultValue={initialData?.fecha || new Date().toISOString().split("T")[0]}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="tipo">Tipo</Label>
+        <Select name="tipo" value={tipo} onValueChange={(value) => setTipo(value as "ingreso" | "egreso")}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecciona tipo" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ingreso">Ingreso</SelectItem>
@@ -68,111 +88,72 @@ export function TransactionForm({ initialData, onSuccess }: TransactionFormProps
           </SelectContent>
         </Select>
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="concepto" className="text-right">
-          Concepto
-        </Label>
-        <Input
-          id="concepto"
-          name="concepto"
-          defaultValue={initialData?.concepto ?? ""}
-          className="col-span-3"
-          required
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="monto" className="text-right">
-          Monto
-        </Label>
+      <div className="space-y-2">
+        <Label htmlFor="monto">Monto (USD)</Label>
         <Input
           id="monto"
           name="monto"
           type="number"
           step="0.01"
-          defaultValue={initialData?.monto ?? 0}
-          className="col-span-3"
+          placeholder="0.00"
           required
+          value={monto}
+          onChange={(e) => setMonto(e.target.value)}
         />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="fecha" className="text-right">
-          Fecha
-        </Label>
-        <Input
-          id="fecha"
-          name="fecha"
-          type="date"
-          defaultValue={initialData?.fecha ?? new Date().toISOString().split("T")[0]}
-          className="col-span-3"
-          required
-        />
+      <div className="space-y-2">
+        <Label htmlFor="descripcion">Descripción</Label>
+        <Input id="descripcion" name="descripcion" required defaultValue={initialData?.descripcion || ""} />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="cuenta_id" className="text-right">
-          Cuenta
-        </Label>
-        <Select name="cuenta_id" defaultValue={initialData?.cuenta_id ?? ""}>
-          <SelectTrigger className="col-span-3">
-            <SelectValue placeholder="Cuenta" />
-          </SelectTrigger>
-          <SelectContent>
-            {cuentas.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.nombre}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="detalle" className="text-right">
-          Detalle
-        </Label>
-        <Textarea id="detalle" name="detalle" defaultValue={initialData?.detalle ?? ""} className="col-span-3" />
+      <div className="space-y-2">
+        <Label htmlFor="categoria">Categoría</Label>
+        <Input id="categoria" name="categoria" required defaultValue={initialData?.categoria || ""} />
       </div>
 
-      {transactionType === "ingreso" && (
+      {showComisionFields && (
         <>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="cliente_id" className="text-right">
-              Cliente
-            </Label>
-            <Select name="cliente_id" defaultValue={initialData?.cliente_id ?? "N/A"}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Cliente" />
+          <div className="space-y-2">
+            <Label htmlFor="vendedor">Vendedor</Label>
+            <Select name="vendedor" value={vendedor} onValueChange={setVendedor}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona vendedor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="N/A">N/A</SelectItem>
-                {clientes.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.cliente}
-                  </SelectItem>
-                ))}
+                <SelectItem value="Ileana">Ileana</SelectItem>
+                <SelectItem value="Edxel">Edxel</SelectItem>
+                <SelectItem value="Nahuel">Nahuel</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="aplicar_comision" className="text-right">
-              Aplicar Comisión
-            </Label>
-            <Checkbox
-              id="aplicar_comision"
-              name="aplicar_comision"
-              checked={applyCommission}
-              onCheckedChange={setApplyCommission}
-              className="col-span-3"
+          <div className="space-y-2">
+            <Label htmlFor="comision">Comisión (%)</Label>
+            <Input
+              id="comision"
+              name="comision"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={comision}
+              onChange={(e) => setComision(e.target.value)}
             />
           </div>
         </>
       )}
 
-      <DialogFooter>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Guardando..." : isEditing ? "Actualizar" : "Añadir"}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancelar
         </Button>
-      </DialogFooter>
+        <Button type="submit" disabled={isPending}>
+          {isPending
+            ? isEditing
+              ? "Actualizando..."
+              : "Añadiendo..."
+            : isEditing
+              ? "Actualizar Transacción"
+              : "Añadir Transacción"}
+        </Button>
+      </div>
     </form>
   )
 }
-
-export default TransactionForm

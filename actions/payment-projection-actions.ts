@@ -1,7 +1,35 @@
-// actions/payment-projection-actions.ts
+"use server" // Asegura que este archivo solo se ejecute en el servidor
 
-import { createClient } from "@/lib/supabase/server" // Importación directa del cliente de servidor
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
+import { revalidatePath } from "next/cache" // Para revalidar la caché y actualizar el frontend
 import type { Tables } from "@/lib/database.types"
+
+// Helper function to create Supabase client for server actions
+function getSupabaseServerClient() {
+  const cookieStore = cookies()
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
+      },
+      set(name: string, value: string, options: any) {
+        try {
+          cookieStore.set({ name, value, ...options })
+        } catch (error) {
+          console.warn("Could not set cookie from server:", error)
+        }
+      },
+      remove(name: string, options: any) {
+        try {
+          cookieStore.set({ name, value: "", ...options })
+        } catch (error) {
+          console.warn("Could not remove cookie from server:", error)
+        }
+      },
+    },
+  })
+}
 
 // Helper function to update JSONB arrays
 async function updateClientJsonbArray(
@@ -9,7 +37,7 @@ async function updateClientJsonbArray(
   fieldName: "historial_pagos" | "proyeccion_pagos",
   newArray: any[],
 ) {
-  const supabase = await createClient() // Usar await
+  const supabase = getSupabaseServerClient()
   const { error } = await supabase
     .from("clientes")
     .update({ [fieldName]: newArray as Tables<"clientes">[typeof fieldName] })
@@ -20,23 +48,26 @@ async function updateClientJsonbArray(
     return { success: false, message: `Error al actualizar ${fieldName}: ${error.message}` }
   }
 
-  // revalidatePath(`/clients/${clientId}`) // Descomentar si necesitas revalidar la ruta del cliente
+  revalidatePath(`/clients/${clientId}`) // Revalidar la página del cliente para mostrar los cambios
   return { success: true, message: `${fieldName} actualizado exitosamente.` }
 }
 
 // --- Historial de Pagos Actions ---
 
-export async function addPayment(formData: FormData) {
-  const clientId = formData.get("cliente_id") as string
-  const fecha = formData.get("fecha") as string
-  const monto = Number.parseFloat(formData.get("monto") as string)
-  const descripcion = formData.get("descripcion") as string
+export async function addPayment(
+  prevState: any,
+  data: { clienteId: string; fecha: string; monto: number; descripcion: string },
+) {
+  console.log("--- Server Action: addPayment called ---")
+  console.log("Server: Received data:", data)
 
-  const supabase = await createClient() // Usar await
+  const { clienteId, fecha, monto, descripcion } = data
+
+  const supabase = getSupabaseServerClient()
   const { data: client, error: fetchError } = await supabase
     .from("clientes")
     .select("historial_pagos")
-    .eq("id", clientId)
+    .eq("id", clienteId)
     .single()
 
   if (fetchError || !client) {
@@ -48,21 +79,23 @@ export async function addPayment(formData: FormData) {
   const newPayment = { fecha, monto, descripcion }
   const updatedPayments = [...currentPayments, newPayment]
 
-  return updateClientJsonbArray(clientId, "historial_pagos", updatedPayments)
+  return updateClientJsonbArray(clienteId, "historial_pagos", updatedPayments)
 }
 
-export async function updatePayment(formData: FormData) {
-  const clientId = formData.get("cliente_id") as string
-  const index = Number.parseInt(formData.get("index") as string)
-  const fecha = formData.get("fecha") as string
-  const monto = Number.parseFloat(formData.get("monto") as string)
-  const descripcion = formData.get("descripcion") as string
+export async function updatePayment(
+  prevState: any,
+  data: { clienteId: string; index: number; fecha: string; monto: number; descripcion: string },
+) {
+  console.log("--- Server Action: updatePayment called ---")
+  console.log("Server: Received data:", data)
 
-  const supabase = await createClient() // Usar await
+  const { clienteId, index, fecha, monto, descripcion } = data
+
+  const supabase = getSupabaseServerClient()
   const { data: client, error: fetchError } = await supabase
     .from("clientes")
     .select("historial_pagos")
-    .eq("id", clientId)
+    .eq("id", clienteId)
     .single()
 
   if (fetchError || !client) {
@@ -78,11 +111,11 @@ export async function updatePayment(formData: FormData) {
   const updatedPayments = [...currentPayments]
   updatedPayments[index] = { fecha, monto, descripcion }
 
-  return updateClientJsonbArray(clientId, "historial_pagos", updatedPayments)
+  return updateClientJsonbArray(clienteId, "historial_pagos", updatedPayments)
 }
 
 export async function deletePayment(clientId: string, index: number) {
-  const supabase = await createClient() // Usar await
+  const supabase = getSupabaseServerClient()
   const { data: client, error: fetchError } = await supabase
     .from("clientes")
     .select("historial_pagos")
@@ -106,17 +139,20 @@ export async function deletePayment(clientId: string, index: number) {
 
 // --- Proyecciones de Pagos Actions ---
 
-export async function addProjection(formData: FormData) {
-  const clientId = formData.get("cliente_id") as string
-  const fecha = formData.get("fecha") as string
-  const monto = Number.parseFloat(formData.get("monto") as string)
-  const pagado = formData.get("pagado") === "true"
+export async function addProjection(
+  prevState: any,
+  data: { clienteId: string; fecha: string; monto: number; pagado: boolean },
+) {
+  console.log("--- Server Action: addProjection called ---")
+  console.log("Server: Received data:", data)
 
-  const supabase = await createClient() // Usar await
+  const { clienteId, fecha, monto, pagado } = data
+
+  const supabase = getSupabaseServerClient()
   const { data: client, error: fetchError } = await supabase
     .from("clientes")
     .select("proyeccion_pagos")
-    .eq("id", clientId)
+    .eq("id", clienteId)
     .single()
 
   if (fetchError || !client) {
@@ -128,21 +164,23 @@ export async function addProjection(formData: FormData) {
   const newProjection = { fecha, monto, pagado }
   const updatedProjections = [...currentProjections, newProjection]
 
-  return updateClientJsonbArray(clientId, "proyeccion_pagos", updatedProjections)
+  return updateClientJsonbArray(clienteId, "proyeccion_pagos", updatedProjections)
 }
 
-export async function updateProjection(formData: FormData) {
-  const clientId = formData.get("cliente_id") as string
-  const index = Number.parseInt(formData.get("index") as string)
-  const fecha = formData.get("fecha") as string
-  const monto = Number.parseFloat(formData.get("monto") as string)
-  const pagado = formData.get("pagado") === "true"
+export async function updateProjection(
+  prevState: any,
+  data: { clienteId: string; index: number; fecha: string; monto: number; pagado: boolean },
+) {
+  console.log("--- Server Action: updateProjection called ---")
+  console.log("Server: Received data:", data)
 
-  const supabase = await createClient() // Usar await
+  const { clienteId, index, fecha, monto, pagado } = data
+
+  const supabase = getSupabaseServerClient()
   const { data: client, error: fetchError } = await supabase
     .from("clientes")
     .select("proyeccion_pagos")
-    .eq("id", clientId)
+    .eq("id", clienteId)
     .single()
 
   if (fetchError || !client) {
@@ -158,11 +196,11 @@ export async function updateProjection(formData: FormData) {
   const updatedProjections = [...currentProjections]
   updatedProjections[index] = { fecha, monto, pagado }
 
-  return updateClientJsonbArray(clientId, "proyeccion_pagos", updatedProjections)
+  return updateClientJsonbArray(clienteId, "proyeccion_pagos", updatedProjections)
 }
 
 export async function deleteProjection(clientId: string, index: number) {
-  const supabase = await createClient() // Usar await
+  const supabase = getSupabaseServerClient()
   const { data: client, error: fetchError } = await supabase
     .from("clientes")
     .select("proyeccion_pagos")

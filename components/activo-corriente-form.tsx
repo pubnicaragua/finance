@@ -1,24 +1,31 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
-import { addActivoCorriente, updateActivoCorriente } from "@/actions/asset-liability-actions"
+import type React from "react"
+import { useActionState, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { toast } from "@/components/ui/use-toast"
-import { DialogFooter } from "@/components/ui/dialog"
+import { useToast } from "@/hooks/use-toast"
+import { addActivoCorriente, updateActivoCorriente } from "@/actions/asset-liability-actions"
 import type { Tables } from "@/lib/database.types"
 
 interface ActivoCorrienteFormProps {
-  initialData?: Tables<"activos_corrientes">
+  initialData?: Tables<"activos_corrientes"> | null
   onSuccess?: () => void
+  onCancel?: () => void
 }
 
-export function ActivoCorrienteForm({ initialData, onSuccess }: ActivoCorrienteFormProps) {
-  // Exportado como named export
+export function ActivoCorrienteForm({ initialData, onSuccess, onCancel }: ActivoCorrienteFormProps) {
   const isEditing = !!initialData
   const action = isEditing ? updateActivoCorriente : addActivoCorriente
   const [state, formAction, isPending] = useActionState(action, null)
+  const { toast } = useToast()
+
+  const [nombre, setNombre] = useState(initialData?.nombre || "")
+  const [monto, setMonto] = useState(initialData?.monto?.toString() || "")
+  const [fechaAdquisicion, setFechaAdquisicion] = useState(
+    initialData?.fecha_adquisicion || new Date().toISOString().split("T")[0],
+  )
 
   useEffect(() => {
     if (state?.success) {
@@ -28,78 +35,72 @@ export function ActivoCorrienteForm({ initialData, onSuccess }: ActivoCorrienteF
         variant: "default",
       })
       onSuccess?.()
-    } else if (state?.success === false) {
+    } else if (state?.message) {
       toast({
         title: "Error",
         description: state.message,
         variant: "destructive",
       })
     }
-  }, [state, onSuccess])
+  }, [state, toast, onSuccess])
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const formData = new FormData(event.currentTarget)
+    const data = {
+      ...(isEditing && { id: initialData.id }),
+      nombre: formData.get("nombre") as string,
+      monto: Number.parseFloat(formData.get("monto") as string),
+      fecha_adquisicion: formData.get("fecha_adquisicion") as string,
+    }
+    console.log("Client: Submitting data:", data)
+    formAction(data)
+  }
 
   return (
-    <form action={formAction} className="grid gap-4 py-4">
-      {isEditing && <Input type="hidden" name="id" defaultValue={initialData.id} />}
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="descripcion" className="text-right">
-          Descripción
-        </Label>
-        <Input
-          id="descripcion"
-          name="descripcion"
-          defaultValue={initialData?.descripcion || ""}
-          className="col-span-3"
-          required
-        />
+    <form onSubmit={handleSubmit} className="grid gap-4">
+      <div className="space-y-2">
+        <Label htmlFor="nombre">Nombre</Label>
+        <Input id="nombre" name="nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="valor" className="text-right">
-          Valor
-        </Label>
+      <div className="space-y-2">
+        <Label htmlFor="monto">Monto (USD)</Label>
         <Input
-          id="valor"
-          name="valor"
+          id="monto"
+          name="monto"
           type="number"
           step="0.01"
-          defaultValue={initialData?.valor || 0}
-          className="col-span-3"
+          placeholder="0.00"
           required
+          value={monto}
+          onChange={(e) => setMonto(e.target.value)}
         />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="cuenta_id" className="text-right">
-          Cuenta ID
-        </Label>
-        <Input
-          id="cuenta_id"
-          name="cuenta_id"
-          defaultValue={initialData?.cuenta_id || ""}
-          className="col-span-3"
-          required
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="fecha_adquisicion" className="text-right">
-          Fecha Adquisición
-        </Label>
+      <div className="space-y-2">
+        <Label htmlFor="fecha_adquisicion">Fecha de Adquisición</Label>
         <Input
           id="fecha_adquisicion"
           name="fecha_adquisicion"
           type="date"
-          defaultValue={
-            initialData?.fecha_adquisicion
-              ? new Date(initialData.fecha_adquisicion).toISOString().split("T")[0]
-              : new Date().toISOString().split("T")[0]
-          }
-          className="col-span-3"
           required
+          value={fechaAdquisicion}
+          onChange={(e) => setFechaAdquisicion(e.target.value)}
         />
       </div>
-      <DialogFooter>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Guardando..." : isEditing ? "Actualizar Activo" : "Añadir Activo"}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancelar
         </Button>
-      </DialogFooter>
+        <Button type="submit" disabled={isPending}>
+          {isPending
+            ? isEditing
+              ? "Actualizando..."
+              : "Añadiendo..."
+            : isEditing
+              ? "Actualizar Activo"
+              : "Añadir Activo"}
+        </Button>
+      </div>
     </form>
   )
 }

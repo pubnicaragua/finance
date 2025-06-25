@@ -1,96 +1,82 @@
-// actions/partnership-actions.ts
+"use server"
 
-import { createServerSupabase } from "@/lib/supabase/server"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
+import { revalidatePath } from "next/cache"
 
-export async function getPartnerships() {
-  const supabase = await createServerSupabase()
-
-  const { data: partnerships, error } = await supabase.from("partnerships").select("*")
-
-  if (error) {
-    console.error("Error fetching partnerships:", error)
-    return []
-  }
-
-  return partnerships
-}
-
-export async function getPartnership(id: string) {
-  const supabase = await createServerSupabase()
-
-  const { data: partnership, error } = await supabase.from("partnerships").select("*").eq("id", id).single()
-
-  if (error) {
-    console.error("Error fetching partnership:", error)
-    return null
-  }
-
-  return partnership
-}
-
-export async function createPartnership(name: string, description: string, imageUrl: string, websiteUrl: string) {
-  const supabase = await createServerSupabase()
-
-  const { data, error } = await supabase
-    .from("partnerships")
-    .insert([
-      {
-        name,
-        description,
-        image_url: imageUrl,
-        website_url: websiteUrl,
+function getSupabaseServerClient() {
+  const cookieStore = cookies()
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
       },
-    ])
-    .select()
+      set(name: string, value: string, options: any) {
+        try {
+          cookieStore.set({ name, value, ...options })
+        } catch (error) {
+          console.warn("Could not set cookie from server:", error)
+        }
+      },
+      remove(name: string, options: any) {
+        try {
+          cookieStore.set({ name, value: "", ...options })
+        } catch (error) {
+          console.warn("Could not remove cookie from server:", error)
+        }
+      },
+    },
+  })
+}
+
+export async function createPartnership(
+  prevState: any,
+  data: { nombre: string; tipo: string; fecha_inicio: string; estado: string },
+) {
+  console.log("--- Server Action: createPartnership called ---")
+  console.log("Server: Received data:", data)
+
+  const supabase = getSupabaseServerClient()
+  const { data: newPartnership, error } = await supabase.from("asociaciones").insert([data])
 
   if (error) {
     console.error("Error creating partnership:", error)
-    return null
+    return { success: false, message: `Error al crear asociación: ${error.message}` }
   }
 
-  return data
+  revalidatePath("/partnerships")
+  return { success: true, message: "Asociación creada exitosamente." }
 }
 
-// Asegura que addPartnership sea una exportación nombrada
-export const addPartnership = createPartnership
-
 export async function updatePartnership(
-  id: string,
-  name: string,
-  description: string,
-  imageUrl: string,
-  websiteUrl: string,
+  prevState: any,
+  data: { id: string; nombre: string; tipo: string; fecha_inicio: string; estado: string },
 ) {
-  const supabase = await createServerSupabase()
+  console.log("--- Server Action: updatePartnership called ---")
+  console.log("Server: Received data:", data)
 
-  const { data, error } = await supabase
-    .from("partnerships")
-    .update({
-      name,
-      description,
-      image_url: imageUrl,
-      website_url: websiteUrl,
-    })
-    .eq("id", id)
-    .select()
+  const supabase = getSupabaseServerClient()
+  const { id, ...updateData } = data
+  const { data: updatedPartnership, error } = await supabase.from("asociaciones").update(updateData).eq("id", id)
 
   if (error) {
     console.error("Error updating partnership:", error)
-    return null
+    return { success: false, message: `Error al actualizar asociación: ${error.message}` }
   }
 
-  return data
+  revalidatePath("/partnerships")
+  return { success: true, message: "Asociación actualizada exitosamente." }
 }
 
 export async function deletePartnership(id: string) {
-  const supabase = await createServerSupabase()
-
-  const { error } = await supabase.from("partnerships").delete().eq("id", id)
+  const supabase = getSupabaseServerClient()
+  const { error } = await supabase.from("asociaciones").delete().eq("id", id)
 
   if (error) {
     console.error("Error deleting partnership:", error)
-    return false
+    return { success: false, message: `Error al eliminar asociación: ${error.message}` }
   }
 
-  return true
+  revalidatePath("/partnerships")
+  return { success: true, message: "Asociación eliminada exitosamente." }
 }

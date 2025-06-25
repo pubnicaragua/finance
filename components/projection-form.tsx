@@ -1,6 +1,8 @@
 "use client"
 
-import { useActionState, useState, useEffect } from "react"
+import type React from "react"
+
+import { useActionState, useState, useEffect, startTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -42,11 +44,24 @@ export function ProjectionForm({ clienteId, initialData, onSuccess, onCancel }: 
     }
   }, [state, toast, onSuccess])
 
-  return (
-    <form action={formAction} className="grid gap-4">
-      <input type="hidden" name="cliente_id" value={clienteId} />
-      {isEditing && <input type="hidden" name="index" value={initialData.index} />}
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const formData = new FormData(event.currentTarget)
+    const data = {
+      clienteId: clienteId, // Ya lo tenemos como prop
+      fecha: formData.get("fecha") as string,
+      monto: Number.parseFloat(formData.get("monto") as string),
+      pagado: formData.get("pagado") === "true",
+      ...(isEditing && { index: initialData.index }), // Añadir index solo si estamos editando
+    }
+    console.log("Client: Submitting data:", data)
+    startTransition(() => {
+      formAction(data)
+    })
+  }
 
+  return (
+    <form onSubmit={handleSubmit} className="grid gap-4">
       <div className="space-y-2">
         <Label htmlFor="fecha">Fecha</Label>
         <Input id="fecha" name="fecha" type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} />

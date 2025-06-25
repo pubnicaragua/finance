@@ -1,147 +1,100 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
-import { addLead, updateLead } from "@/actions/lead-actions"
+import type React from "react"
+import { useActionState, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from "@/components/ui/use-toast"
-import { DialogFooter } from "@/components/ui/dialog"
+import { useToast } from "@/hooks/use-toast"
+import { createLead, updateLead } from "@/actions/lead-actions"
 import type { Tables } from "@/lib/database.types"
 
 interface LeadFormProps {
-  initialData?: Tables<"leads">
+  initialData?: Tables<"leads"> | null
   onSuccess?: () => void
+  onCancel?: () => void
 }
 
-export function LeadForm({ initialData, onSuccess }: LeadFormProps) {
+export function LeadForm({ initialData, onSuccess, onCancel }: LeadFormProps) {
   const isEditing = !!initialData
-  const action = isEditing ? updateLead : addLead
+  const action = isEditing ? updateLead : createLead
   const [state, formAction, isPending] = useActionState(action, null)
+  const { toast } = useToast()
+
+  const [nombre, setNombre] = useState(initialData?.nombre || "")
+  const [email, setEmail] = useState(initialData?.email || "")
+  const [telefono, setTelefono] = useState(initialData?.telefono || "")
+  const [estado, setEstado] = useState(initialData?.estado || "Nuevo")
 
   useEffect(() => {
     if (state?.success) {
-      toast({ title: "Éxito", description: state.message })
+      toast({
+        title: "Éxito",
+        description: state.message,
+        variant: "default",
+      })
       onSuccess?.()
-    } else if (state?.success === false) {
-      toast({ title: "Error", description: state.message, variant: "destructive" })
+    } else if (state?.message) {
+      toast({
+        title: "Error",
+        description: state.message,
+        variant: "destructive",
+      })
     }
-  }, [state, onSuccess])
+  }, [state, toast, onSuccess])
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const formData = new FormData(event.currentTarget)
+    const data = {
+      ...(isEditing && { id: initialData.id }),
+      nombre: formData.get("nombre") as string,
+      email: formData.get("email") as string,
+      telefono: formData.get("telefono") as string,
+      estado: formData.get("estado") as string,
+    }
+    console.log("Client: Submitting data:", data)
+    formAction(data)
+  }
 
   return (
-    <form action={formAction} className="grid gap-4 py-4">
-      {isEditing && <Input type="hidden" name="id" defaultValue={initialData.id} />}
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="cliente" className="text-right">
-          Cliente
-        </Label>
-        <Input id="cliente" name="cliente" defaultValue={initialData?.cliente ?? ""} className="col-span-3" required />
+    <form onSubmit={handleSubmit} className="grid gap-4">
+      <div className="space-y-2">
+        <Label htmlFor="nombre">Nombre</Label>
+        <Input id="nombre" name="nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="proyecto" className="text-right">
-          Proyecto
-        </Label>
-        <Input
-          id="proyecto"
-          name="proyecto"
-          defaultValue={initialData?.proyecto ?? ""}
-          className="col-span-3"
-          required
-        />
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="tipo_software" className="text-right">
-          Tipo Software
-        </Label>
-        <Input
-          id="tipo_software"
-          name="tipo_software"
-          defaultValue={initialData?.tipo_software ?? ""}
-          className="col-span-3"
-        />
+      <div className="space-y-2">
+        <Label htmlFor="telefono">Teléfono</Label>
+        <Input id="telefono" name="telefono" required value={telefono} onChange={(e) => setTelefono(e.target.value)} />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="pais" className="text-right">
-          País
-        </Label>
-        <Input id="pais" name="pais" defaultValue={initialData?.pais ?? ""} className="col-span-3" />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="proyeccion_usd" className="text-right">
-          Proyección USD
-        </Label>
-        <Input
-          id="proyeccion_usd"
-          name="proyeccion_usd"
-          type="number"
-          step="0.01"
-          defaultValue={initialData?.proyeccion_usd ?? 0}
-          className="col-span-3"
-          required
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="estado" className="text-right">
-          Estado
-        </Label>
-        <Select name="estado" defaultValue={initialData?.estado ?? "Nuevo"}>
-          <SelectTrigger className="col-span-3">
+      <div className="space-y-2">
+        <Label htmlFor="estado">Estado</Label>
+        <Select name="estado" value={estado} onValueChange={setEstado}>
+          <SelectTrigger>
             <SelectValue placeholder="Selecciona estado" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="Nuevo">Nuevo</SelectItem>
-            <SelectItem value="En Contacto">En Contacto</SelectItem>
-            <SelectItem value="Propuesta Enviada">Propuesta Enviada</SelectItem>
-            <SelectItem value="Negociación">Negociación</SelectItem>
-            <SelectItem value="Ganado">Ganado</SelectItem>
+            <SelectItem value="Contactado">Contactado</SelectItem>
+            <SelectItem value="Calificado">Calificado</SelectItem>
+            <SelectItem value="Convertido">Convertido</SelectItem>
             <SelectItem value="Perdido">Perdido</SelectItem>
           </SelectContent>
         </Select>
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="canal_contacto" className="text-right">
-          Canal Contacto
-        </Label>
-        <Input
-          id="canal_contacto"
-          name="canal_contacto"
-          defaultValue={initialData?.canal_contacto ?? ""}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="fecha_ultimo_contacto" className="text-right">
-          Último Contacto
-        </Label>
-        <Input
-          id="fecha_ultimo_contacto"
-          name="fecha_ultimo_contacto"
-          type="date"
-          defaultValue={initialData?.fecha_ultimo_contacto ?? new Date().toISOString().split("T")[0]}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="seguimiento" className="text-right">
-          Seguimiento (JSON)
-        </Label>
-        <Textarea
-          id="seguimiento"
-          name="seguimiento"
-          defaultValue={JSON.stringify(initialData?.seguimiento ?? [], null, 2)}
-          className="col-span-3"
-          rows={4}
-        />
-      </div>
-      <DialogFooter>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Guardando..." : isEditing ? "Actualizar Lead" : "Añadir Lead"}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancelar
         </Button>
-      </DialogFooter>
+        <Button type="submit" disabled={isPending}>
+          {isPending ? (isEditing ? "Actualizando..." : "Añadiendo...") : isEditing ? "Actualizar Lead" : "Añadir Lead"}
+        </Button>
+      </div>
     </form>
   )
 }
-
-export default LeadForm

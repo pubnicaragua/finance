@@ -1,16 +1,16 @@
 "use client"
 
+import type React from "react"
 import { useActionState, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { addPayment, updatePayment } from "@/actions/payment-projection-actions"
 
 interface PaymentFormProps {
   clienteId: string
-  initialData?: { fecha: string; monto: number; descripcion?: string; index?: number } | null
+  initialData?: { fecha: string; monto: number; descripcion: string; index?: number } | null
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -42,11 +42,22 @@ export function PaymentForm({ clienteId, initialData, onSuccess, onCancel }: Pay
     }
   }, [state, toast, onSuccess])
 
-  return (
-    <form action={formAction} className="grid gap-4">
-      <input type="hidden" name="cliente_id" value={clienteId} />
-      {isEditing && <input type="hidden" name="index" value={initialData.index} />}
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const formData = new FormData(event.currentTarget)
+    const data = {
+      clienteId: clienteId,
+      fecha: formData.get("fecha") as string,
+      monto: Number.parseFloat(formData.get("monto") as string),
+      descripcion: formData.get("descripcion") as string,
+      ...(isEditing && { index: initialData.index }),
+    }
+    console.log("Client: Submitting data:", data)
+    formAction(data)
+  }
 
+  return (
+    <form onSubmit={handleSubmit} className="grid gap-4">
       <div className="space-y-2">
         <Label htmlFor="fecha">Fecha</Label>
         <Input id="fecha" name="fecha" type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} />
@@ -66,10 +77,10 @@ export function PaymentForm({ clienteId, initialData, onSuccess, onCancel }: Pay
       </div>
       <div className="space-y-2">
         <Label htmlFor="descripcion">Descripción</Label>
-        <Textarea
+        <Input
           id="descripcion"
           name="descripcion"
-          placeholder="Descripción del pago (opcional)"
+          required
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
         />

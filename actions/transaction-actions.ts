@@ -1,90 +1,136 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server" // Importación directa del cliente de servidor
-import type { Tables } from "@/lib/database.types"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
+import { revalidatePath } from "next/cache"
 
-export async function createTransaction(formData: FormData) {
-  const supabase = await createClient()
-  const transactionData: Partial<Tables<"transacciones">> = {
-    tipo: formData.get("tipo") as Tables<"transacciones">["tipo"],
-    concepto: formData.get("concepto") as string,
-    monto: Number.parseFloat(formData.get("monto") as string),
-    fecha: formData.get("fecha") as string,
-    cuenta_id: formData.get("cuenta_id") as string,
-    detalle: formData.get("detalle") as string,
-    cliente_id: formData.get("cliente_id") === "N/A" ? null : (formData.get("cliente_id") as string),
-    tipo_ingreso: formData.get("tipo_ingreso") as Tables<"transacciones">["tipo_ingreso"],
-    tipo_egreso: formData.get("tipo_egreso") as Tables<"transacciones">["tipo_egreso"],
-    aplicar_comision: formData.get("aplicar_comision") === "on",
-    vendedor_comision:
-      formData.get("vendedor_comision") === "N/A" ? null : (formData.get("vendedor_comision") as string),
-    comision_aplicada: formData.get("comision_aplicada")
-      ? Number.parseFloat(formData.get("comision_aplicada") as string)
-      : null,
-  }
+function getSupabaseServerClient() {
+  const cookieStore = cookies()
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
+      },
+      set(name: string, value: string, options: any) {
+        try {
+          cookieStore.set({ name, value, ...options })
+        } catch (error) {
+          console.warn("Could not set cookie from server:", error)
+        }
+      },
+      remove(name: string, options: any) {
+        try {
+          cookieStore.set({ name, value: "", ...options })
+        } catch (error) {
+          console.warn("Could not remove cookie from server:", error)
+        }
+      },
+    },
+  })
+}
 
-  const { data, error } = await supabase.from("transacciones").insert([transactionData]).select()
+export async function createTransaction(
+  prevState: any,
+  data: {
+    fecha: string
+    tipo: "ingreso" | "egreso"
+    monto: number
+    descripcion: string
+    categoria: string
+    vendedor?: string | null
+    comision?: number | null
+  },
+) {
+  console.log("--- Server Action: createTransaction called ---")
+  console.log("Server: Received data:", data)
+
+  const supabase = getSupabaseServerClient()
+
+  const { data: newTransaction, error } = await supabase.from("transacciones").insert([
+    {
+      fecha: data.fecha,
+      tipo: data.tipo,
+      monto: data.monto,
+      descripcion: data.descripcion,
+      categoria: data.categoria,
+      vendedor: data.vendedor || null,
+      comision: data.comision || null,
+    },
+  ])
 
   if (error) {
     console.error("Error creating transaction:", error)
-    return { success: false, message: error.message }
+    return { success: false, message: `Error al crear transacción: ${error.message}` }
   }
 
-  return { success: true, message: "Transacción creada exitosamente", data: data[0] }
+  revalidatePath("/transactions") // Revalidar la página de transacciones
+  revalidatePath("/account-summary") // Revalidar el resumen de cuenta
+  revalidatePath("/net-profit") // Revalidar la utilidad neta
+  revalidatePath("/commissions") // Revalidar comisiones
+  revalidatePath("/") // Revalidar el dashboard general
+  return { success: true, message: "Transacción creada exitosamente." }
 }
 
-export async function getTransactions() {
-  const supabase = await createClient()
+export async function updateTransaction(
+  prevState: any,
+  data: {
+    id: string
+    fecha: string
+    tipo: "ingreso" | "egreso"
+    monto: number
+    descripcion: string
+    categoria: string
+    vendedor?: string | null
+    comision?: number | null
+  },
+) {
+  console.log("--- Server Action: updateTransaction called ---")
+  console.log("Server: Received data:", data)
 
-  const { data, error } = await supabase.from("transacciones").select("*").order("fecha", { ascending: false })
+  const supabase = getSupabaseServerClient()
 
-  if (error) {
-    console.error("Error fetching transactions:", error)
-    return { success: false, message: error.message, data: [] }
-  }
+  const { id, ...updateData } = data
 
-  return { success: true, message: "Transacciones obtenidas", data }
-}
-
-export async function updateTransaction(formData: FormData) {
-  const supabase = await createClient()
-  const id = formData.get("id") as string
-  const transactionData: Partial<Tables<"transacciones">> = {
-    tipo: formData.get("tipo") as Tables<"transacciones">["tipo"],
-    concepto: formData.get("concepto") as string,
-    monto: Number.parseFloat(formData.get("monto") as string),
-    fecha: formData.get("fecha") as string,
-    cuenta_id: formData.get("cuenta_id") as string,
-    detalle: formData.get("detalle") as string,
-    cliente_id: formData.get("cliente_id") === "N/A" ? null : (formData.get("cliente_id") as string),
-    tipo_ingreso: formData.get("tipo_ingreso") as Tables<"transacciones">["tipo_ingreso"],
-    tipo_egreso: formData.get("tipo_egreso") as Tables<"transacciones">["tipo_egreso"],
-    aplicar_comision: formData.get("aplicar_comision") === "on",
-    vendedor_comision:
-      formData.get("vendedor_comision") === "N/A" ? null : (formData.get("vendedor_comision") as string),
-    comision_aplicada: formData.get("comision_aplicada")
-      ? Number.parseFloat(formData.get("comision_aplicada") as string)
-      : null,
-  }
-
-  const { data, error } = await supabase.from("transacciones").update(transactionData).eq("id", id).select()
+  const { data: updatedTransaction, error } = await supabase
+    .from("transacciones")
+    .update({
+      fecha: updateData.fecha,
+      tipo: updateData.tipo,
+      monto: updateData.monto,
+      descripcion: updateData.descripcion,
+      categoria: updateData.categoria,
+      vendedor: updateData.vendedor || null,
+      comision: updateData.comision || null,
+    })
+    .eq("id", id)
 
   if (error) {
     console.error("Error updating transaction:", error)
-    return { success: false, message: error.message }
+    return { success: false, message: `Error al actualizar transacción: ${error.message}` }
   }
 
-  return { success: true, message: "Transacción actualizada exitosamente", data: data[0] }
+  revalidatePath("/transactions")
+  revalidatePath("/account-summary")
+  revalidatePath("/net-profit")
+  revalidatePath("/commissions")
+  revalidatePath("/")
+  return { success: true, message: "Transacción actualizada exitosamente." }
 }
 
 export async function deleteTransaction(id: string) {
-  const supabase = await createClient()
+  const supabase = getSupabaseServerClient()
+
   const { error } = await supabase.from("transacciones").delete().eq("id", id)
 
   if (error) {
     console.error("Error deleting transaction:", error)
-    return { success: false, message: error.message }
+    return { success: false, message: `Error al eliminar transacción: ${error.message}` }
   }
 
-  return { success: true, message: "Transacción eliminada exitosamente" }
+  revalidatePath("/transactions")
+  revalidatePath("/account-summary")
+  revalidatePath("/net-profit")
+  revalidatePath("/commissions")
+  revalidatePath("/")
+  return { success: true, message: "Transacción eliminada exitosamente." }
 }

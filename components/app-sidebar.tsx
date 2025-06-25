@@ -40,13 +40,12 @@ const navItems = [
     label: "Navegación",
     items: [
       { title: "Dashboard General", href: "/", icon: LayoutDashboard },
-      // { title: "Cargador de Datos", href: "/data-loader", icon: Upload }, // Eliminado
       { title: "Clientes", href: "/clients", icon: Users },
       { title: "Leads", href: "/leads", icon: UserPlus },
       { title: "Resumen de Proyectos", href: "/project-summary", icon: BarChart },
-      { title: "Partnerships", href: "/partnerships", icon: Handshake }, // Corregido a Partnerships
+      { title: "Partnerships", href: "/partnerships", icon: Handshake },
       { title: "Ingresos y Egresos", href: "/transactions", icon: DollarSign },
-      { title: "Proyecciones", href: "/projections", icon: Calendar },
+      { title: "Cuentas Por Cobrar", href: "/cuentas-por-cobrar", icon: Calendar }, // Renombrado y nueva ruta
       { title: "Comisiones", href: "/commissions", icon: Percent },
       { title: "Resumen de Cuentas", href: "/account-summary", icon: Wallet },
       { title: "Balance General", href: "/balance-sheet", icon: Scale },
