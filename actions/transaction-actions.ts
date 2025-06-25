@@ -1,39 +1,46 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { createClient } from "@/lib/supabase/server"
 import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
 
 export async function addTransaction(prevState: any, formData: FormData) {
   const supabase = createClient()
-  const data = Object.fromEntries(formData.entries()) as Partial<TablesInsert<"transacciones">>
+  const fecha = formData.get("fecha") as string
+  const tipo = formData.get("tipo") as TablesInsert<"transacciones">["tipo"]
+  const concepto = formData.get("concepto") as string
+  const monto = Number.parseFloat(formData.get("monto") as string)
+  const descripcion = formData.get("descripcion") as string
+  const categoria = formData.get("categoria") as string // Esto se mapeará a tipo_ingreso/egreso
+  const aplicar_comision = formData.get("aplicar_comision") === "on"
+  const vendedor_comision = formData.get("vendedor_comision") as string
+  const comision_aplicada = Number.parseFloat(formData.get("comision_aplicada") as string)
 
-  const { fecha, tipo, categoria, descripcion, monto, cuenta_origen_id, cuenta_destino_id, cliente_id, proyecto_id } =
-    data
-
-  if (!fecha || typeof fecha !== "string" || fecha.trim() === "") {
-    return { success: false, message: "La fecha es requerida." }
+  // Validaciones básicas para campos NOT NULL
+  if (!concepto) {
+    return { success: false, message: "Error al añadir transacción: El concepto es requerido." }
   }
-  if (!tipo || typeof tipo !== "string" || tipo.trim() === "") {
-    return { success: false, message: "El tipo es requerido." }
+  if (!fecha) {
+    return { success: false, message: "Error al añadir transacción: La fecha es requerida." }
   }
-  if (!categoria || typeof categoria !== "string" || categoria.trim() === "") {
-    return { success: false, message: "La categoría es requerida." }
+  if (isNaN(monto)) {
+    return { success: false, message: "Error al añadir transacción: El monto es requerido." }
   }
-  if (monto === undefined || monto === null || isNaN(Number(monto))) {
-    return { success: false, message: "El monto es requerido y debe ser un número." }
+  if (!tipo) {
+    return { success: false, message: "Error al añadir transacción: El tipo de transacción es requerido." }
   }
 
   const newTransaction: TablesInsert<"transacciones"> = {
+    concepto: concepto,
     fecha: fecha,
+    monto: monto,
     tipo: tipo,
-    categoria: categoria,
-    descripcion: descripcion || null,
-    monto: Number(monto),
-    cuenta_origen_id: cuenta_origen_id || null,
-    cuenta_destino_id: cuenta_destino_id || null,
-    cliente_id: cliente_id || null,
-    proyecto_id: proyecto_id || null,
+    detalle: descripcion,
+    tipo_ingreso: tipo === "ingreso" ? categoria : null, // Mapeo correcto
+    tipo_egreso: tipo === "egreso" ? categoria : null, // Mapeo correcto
+    aplicar_comision: aplicar_comision,
+    vendedor_comision: aplicar_comision ? vendedor_comision : null,
+    comision_aplicada: aplicar_comision ? comision_aplicada : null,
   }
 
   const { error } = await supabase.from("transacciones").insert(newTransaction)
@@ -44,52 +51,54 @@ export async function addTransaction(prevState: any, formData: FormData) {
   }
 
   revalidatePath("/transactions")
+  revalidatePath("/account-summary")
+  revalidatePath("/net-profit")
+  revalidatePath("/commissions")
+  revalidatePath("/")
   return { success: true, message: "Transacción añadida exitosamente." }
 }
 
 export async function updateTransaction(prevState: any, formData: FormData) {
   const supabase = createClient()
-  const data = Object.fromEntries(formData.entries()) as Partial<TablesUpdate<"transacciones">> & { id: string }
+  const id = formData.get("id") as string
+  const concepto = formData.get("concepto") as string
+  const fecha = formData.get("fecha") as string
+  const monto = Number.parseFloat(formData.get("monto") as string)
+  const tipo = formData.get("tipo") as TablesUpdate<"transacciones">["tipo"]
+  const descripcion = formData.get("descripcion") as string
+  const categoria = formData.get("categoria") as string // Esto se mapeará a tipo_ingreso/egreso
+  const aplicar_comision = formData.get("aplicar_comision") === "on"
+  const vendedor_comision = formData.get("vendedor_comision") as string
+  const comision_aplicada = Number.parseFloat(formData.get("comision_aplicada") as string)
 
-  const {
-    id,
-    fecha,
-    tipo,
-    categoria,
-    descripcion,
-    monto,
-    cuenta_origen_id,
-    cuenta_destino_id,
-    cliente_id,
-    proyecto_id,
-  } = data
-
-  if (!id || typeof id !== "string" || id.trim() === "") {
-    return { success: false, message: "El ID de la transacción es requerido." }
+  // Validaciones básicas para campos NOT NULL
+  if (!id) {
+    return { success: false, message: "Error al actualizar transacción: El ID es requerido." }
   }
-  if (!fecha || typeof fecha !== "string" || fecha.trim() === "") {
-    return { success: false, message: "La fecha es requerida." }
+  if (!concepto) {
+    return { success: false, message: "Error al actualizar transacción: El concepto es requerido." }
   }
-  if (!tipo || typeof tipo !== "string" || tipo.trim() === "") {
-    return { success: false, message: "El tipo es requerido." }
+  if (!fecha) {
+    return { success: false, message: "Error al actualizar transacción: La fecha es requerida." }
   }
-  if (!categoria || typeof categoria !== "string" || categoria.trim() === "") {
-    return { success: false, message: "La categoría es requerida." }
+  if (isNaN(monto)) {
+    return { success: false, message: "Error al actualizar transacción: El monto es requerido." }
   }
-  if (monto === undefined || monto === null || isNaN(Number(monto))) {
-    return { success: false, message: "El monto es requerido y debe ser un número." }
+  if (!tipo) {
+    return { success: false, message: "Error al actualizar transacción: El tipo de transacción es requerido." }
   }
 
   const updatedTransaction: TablesUpdate<"transacciones"> = {
+    concepto: concepto,
     fecha: fecha,
+    monto: monto,
     tipo: tipo,
-    categoria: categoria,
-    descripcion: descripcion || null,
-    monto: Number(monto),
-    cuenta_origen_id: cuenta_origen_id || null,
-    cuenta_destino_id: cuenta_destino_id || null,
-    cliente_id: cliente_id || null,
-    proyecto_id: proyecto_id || null,
+    detalle: descripcion,
+    tipo_ingreso: tipo === "ingreso" ? categoria : null, // Mapeo correcto
+    tipo_egreso: tipo === "egreso" ? categoria : null, // Mapeo correcto
+    aplicar_comision: aplicar_comision,
+    vendedor_comision: aplicar_comision ? vendedor_comision : null,
+    comision_aplicada: aplicar_comision ? comision_aplicada : null,
   }
 
   const { error } = await supabase.from("transacciones").update(updatedTransaction).eq("id", id)
@@ -100,6 +109,10 @@ export async function updateTransaction(prevState: any, formData: FormData) {
   }
 
   revalidatePath("/transactions")
+  revalidatePath("/account-summary")
+  revalidatePath("/net-profit")
+  revalidatePath("/commissions")
+  revalidatePath("/")
   return { success: true, message: "Transacción actualizada exitosamente." }
 }
 
@@ -113,6 +126,10 @@ export async function deleteTransaction(id: string) {
   }
 
   revalidatePath("/transactions")
+  revalidatePath("/account-summary")
+  revalidatePath("/net-profit")
+  revalidatePath("/commissions")
+  revalidatePath("/")
   return { success: true, message: "Transacción eliminada exitosamente." }
 }
 

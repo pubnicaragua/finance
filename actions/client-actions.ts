@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
 
-export async function addClient(formData: FormData) {
+export async function addClient(prevState: any, formData: FormData) {
   const supabase = createClient()
   const newClient: TablesInsert<"clientes"> = {
     cliente: formData.get("cliente") as string,
@@ -16,7 +16,6 @@ export async function addClient(formData: FormData) {
     abonado: Number.parseFloat(formData.get("abonado") as string),
     deuda: Number.parseFloat(formData.get("deuda") as string),
     fecha_vencimiento: formData.get("fecha_vencimiento") as string,
-    // historial_pagos y proyeccion_pagos se manejarán por separado o como JSON vacío inicialmente
     historial_pagos: [],
     proyeccion_pagos: [],
   }
@@ -32,7 +31,7 @@ export async function addClient(formData: FormData) {
   return { success: true, message: "Cliente añadido exitosamente." }
 }
 
-export async function updateClient(formData: FormData) {
+export async function updateClient(prevState: any, formData: FormData) {
   const supabase = createClient()
   const id = formData.get("id") as string
   const updatedClient: TablesUpdate<"clientes"> = {

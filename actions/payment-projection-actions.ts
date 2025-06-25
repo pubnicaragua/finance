@@ -25,40 +25,31 @@ async function updateClientPaymentHistory(clienteId: string, newHistorialPagos: 
   return { success: true }
 }
 
-export async function addPayment(
-  prevState: any,
-  data: {
-    cliente_id: string
-    fecha: string
-    monto: number
-    descripcion?: string
-  },
-) {
+export async function addPayment(prevState: any, formData: FormData) {
   console.log("--- Server Action: addPayment called ---")
-  console.log("Server: Received data:", data)
+  const cliente_id = formData.get("cliente_id") as string
+  const fecha = formData.get("fecha") as string
+  const monto = Number.parseFloat(formData.get("monto") as string)
+  const descripcion = formData.get("descripcion") as string
 
-  const { cliente_id, fecha, monto, descripcion } = data
-
-  if (!cliente_id || typeof cliente_id !== "string" || cliente_id.trim() === "") {
+  if (!cliente_id || cliente_id.trim() === "") {
     console.error("Validation Error: cliente_id es nulo o inválido para addPayment.")
     return {
       success: false,
       message: "Error al añadir pago: El ID del cliente es requerido y debe ser una cadena válida.",
     }
   }
-  if (!fecha || typeof fecha !== "string" || fecha.trim() === "") {
+  if (!fecha || fecha.trim() === "") {
     console.error("Validation Error: fecha es nulo o inválido para addPayment.")
     return { success: false, message: "Error al añadir pago: La fecha es requerida." }
   }
-  if (monto === undefined || monto === null || isNaN(Number(monto))) {
-    // Validar que sea un número
+  if (isNaN(monto)) {
     console.error("Validation Error: monto es nulo o inválido para addPayment.")
     return { success: false, message: "Error al añadir pago: El monto es requerido y debe ser un número válido." }
   }
 
   const supabase = createClient()
 
-  // Fetch current client data to get existing historial_pagos
   const { data: client, error: fetchClientError } = await supabase
     .from("clientes")
     .select("historial_pagos, abonado")
@@ -71,7 +62,7 @@ export async function addPayment(
   }
 
   const currentHistorialPagos = (client.historial_pagos || []) as Array<any>
-  const newPayment = { fecha, monto: Number(monto), descripcion: descripcion || null } // Asegurar que monto sea número
+  const newPayment = { fecha, monto, descripcion: descripcion || null }
   const updatedHistorialPagos = [...currentHistorialPagos, newPayment]
 
   const { success, message } = await updateClientPaymentHistory(cliente_id, updatedHistorialPagos)
@@ -84,47 +75,39 @@ export async function addPayment(
   return { success: true, message: "Pago añadido exitosamente." }
 }
 
-export async function updatePayment(
-  prevState: any,
-  data: {
-    cliente_id: string
-    index: number
-    fecha: string
-    monto: number
-    descripcion?: string
-  },
-) {
+export async function updatePayment(prevState: any, formData: FormData) {
   console.log("--- Server Action: updatePayment called ---")
-  console.log("Server: Received data:", data)
+  const cliente_id = formData.get("cliente_id") as string
+  const index = Number.parseInt(formData.get("index") as string)
+  const fecha = formData.get("fecha") as string
+  const monto = Number.parseFloat(formData.get("monto") as string)
+  const descripcion = formData.get("descripcion") as string
 
-  const { cliente_id, index, fecha, monto, descripcion } = data
-
-  if (!cliente_id || typeof cliente_id !== "string" || cliente_id.trim() === "") {
+  if (!cliente_id || cliente_id.trim() === "") {
     console.error("Validation Error: cliente_id es nulo o inválido para updatePayment.")
     return {
       success: false,
       message: "Error al actualizar pago: El ID del cliente es requerido y debe ser una cadena válida.",
     }
   }
-  if (index === undefined || index === null || index < 0 || isNaN(Number(index))) {
+  if (isNaN(index) || index < 0) {
     console.error("Validation Error: index es nulo o inválido para updatePayment.")
     return {
       success: false,
       message: "Error al actualizar pago: El índice del pago es requerido y debe ser un número válido.",
     }
   }
-  if (!fecha || typeof fecha !== "string" || fecha.trim() === "") {
+  if (!fecha || fecha.trim() === "") {
     console.error("Validation Error: fecha es nulo o inválido para updatePayment.")
     return { success: false, message: "Error al actualizar pago: La fecha es requerida." }
   }
-  if (monto === undefined || monto === null || isNaN(Number(monto))) {
+  if (isNaN(monto)) {
     console.error("Validation Error: monto es nulo o inválido para updatePayment.")
     return { success: false, message: "Error al actualizar pago: El monto es requerido y debe ser un número válido." }
   }
 
   const supabase = createClient()
 
-  // Fetch current client data
   const { data: client, error: fetchClientError } = await supabase
     .from("clientes")
     .select("historial_pagos, abonado")
@@ -142,7 +125,7 @@ export async function updatePayment(
   }
 
   const updatedHistorialPagos = [...currentHistorialPagos]
-  updatedHistorialPagos[index] = { fecha, monto: Number(monto), descripcion: descripcion || null } // Asegurar que monto sea número
+  updatedHistorialPagos[index] = { fecha, monto, descripcion: descripcion || null }
 
   const { success, message } = await updateClientPaymentHistory(cliente_id, updatedHistorialPagos)
 
@@ -156,16 +139,15 @@ export async function updatePayment(
 
 export async function deletePayment(clienteId: string, index: number) {
   console.log("--- Server Action: deletePayment called ---")
-  console.log("Server: Received data:", { clienteId, index })
 
-  if (!clienteId || typeof clienteId !== "string" || clienteId.trim() === "") {
+  if (!clienteId || clienteId.trim() === "") {
     console.error("Validation Error: clienteId es nulo o inválido para deletePayment.")
     return {
       success: false,
       message: "Error al eliminar pago: El ID del cliente es requerido y debe ser una cadena válida.",
     }
   }
-  if (index === undefined || index === null || index < 0 || isNaN(Number(index))) {
+  if (isNaN(index) || index < 0) {
     console.error("Validation Error: index es nulo o inválido para deletePayment.")
     return {
       success: false,
@@ -175,7 +157,6 @@ export async function deletePayment(clienteId: string, index: number) {
 
   const supabase = createClient()
 
-  // Fetch current client data
   const { data: client, error: fetchClientError } = await supabase
     .from("clientes")
     .select("historial_pagos, abonado")
@@ -204,40 +185,32 @@ export async function deletePayment(clienteId: string, index: number) {
   return { success: true, message: "Pago eliminado exitosamente." }
 }
 
-export async function addProjection(
-  prevState: any,
-  data: {
-    cliente_id: string
-    fecha: string
-    monto: number
-    descripcion?: string
-    estado?: string
-  },
-) {
+export async function addProjection(prevState: any, formData: FormData) {
   console.log("--- Server Action: addProjection called ---")
-  console.log("Server: Received data:", data)
+  const cliente_id = formData.get("cliente_id") as string
+  const fecha = formData.get("fecha") as string
+  const monto = Number.parseFloat(formData.get("monto") as string)
+  const descripcion = formData.get("descripcion") as string
+  const estado = formData.get("estado") as string
 
-  const { cliente_id, fecha, monto, descripcion, estado } = data
-
-  if (!cliente_id || typeof cliente_id !== "string" || cliente_id.trim() === "") {
+  if (!cliente_id || cliente_id.trim() === "") {
     console.error("Validation Error: cliente_id es nulo o inválido para addProjection.")
     return {
       success: false,
       message: "Error al añadir proyección: El ID del cliente es requerido y debe ser una cadena válida.",
     }
   }
-  if (!fecha || typeof fecha !== "string" || fecha.trim() === "") {
+  if (!fecha || fecha.trim() === "") {
     console.error("Validation Error: fecha es nulo o inválido para addProjection.")
     return { success: false, message: "Error al añadir proyección: La fecha es requerida." }
   }
-  if (monto === undefined || monto === null || isNaN(Number(monto))) {
+  if (isNaN(monto)) {
     console.error("Validation Error: monto es nulo o inválido para addProjection.")
     return { success: false, message: "Error al añadir proyección: El monto es requerido y debe ser un número válido." }
   }
 
   const supabase = createClient()
 
-  // Fetch current client data to get existing proyeccion_pagos
   const { data: client, error: fetchClientError } = await supabase
     .from("clientes")
     .select("proyeccion_pagos")
@@ -250,7 +223,7 @@ export async function addProjection(
   }
 
   const currentProyeccionPagos = (client.proyeccion_pagos || []) as Array<any>
-  const newProjection = { fecha, monto: Number(monto), descripcion: descripcion || null, estado: estado || "Pendiente" }
+  const newProjection = { fecha, monto, descripcion: descripcion || null, estado: estado || "Pendiente" }
   const updatedProyeccionPagos = [...currentProyeccionPagos, newProjection]
 
   const { error: updateError } = await supabase
@@ -267,41 +240,34 @@ export async function addProjection(
   return { success: true, message: "Proyección añadida exitosamente." }
 }
 
-export async function updateProjection(
-  prevState: any,
-  data: {
-    cliente_id: string
-    index: number
-    fecha: string
-    monto: number
-    descripcion?: string
-    estado?: string
-  },
-) {
+export async function updateProjection(prevState: any, formData: FormData) {
   console.log("--- Server Action: updateProjection called ---")
-  console.log("Server: Received data:", data)
+  const cliente_id = formData.get("cliente_id") as string
+  const index = Number.parseInt(formData.get("index") as string)
+  const fecha = formData.get("fecha") as string
+  const monto = Number.parseFloat(formData.get("monto") as string)
+  const descripcion = formData.get("descripcion") as string
+  const estado = formData.get("estado") as string
 
-  const { cliente_id, index, fecha, monto, descripcion, estado } = data
-
-  if (!cliente_id || typeof cliente_id !== "string" || cliente_id.trim() === "") {
+  if (!cliente_id || cliente_id.trim() === "") {
     console.error("Validation Error: cliente_id es nulo o inválido para updateProjection.")
     return {
       success: false,
       message: "Error al actualizar proyección: El ID del cliente es requerido y debe ser una cadena válida.",
     }
   }
-  if (index === undefined || index === null || index < 0 || isNaN(Number(index))) {
+  if (isNaN(index) || index < 0) {
     console.error("Validation Error: index es nulo o inválido para updateProjection.")
     return {
       success: false,
       message: "Error al actualizar proyección: El índice de la proyección es requerido y debe ser un número válido.",
     }
   }
-  if (!fecha || typeof fecha !== "string" || fecha.trim() === "") {
+  if (!fecha || fecha.trim() === "") {
     console.error("Validation Error: fecha es nulo o inválido para updateProjection.")
     return { success: false, message: "Error al actualizar proyección: La fecha es requerida." }
   }
-  if (monto === undefined || monto === null || isNaN(Number(monto))) {
+  if (isNaN(monto)) {
     console.error("Validation Error: monto es nulo o inválido para updateProjection.")
     return {
       success: false,
@@ -311,7 +277,6 @@ export async function updateProjection(
 
   const supabase = createClient()
 
-  // Fetch current client data
   const { data: client, error: fetchClientError } = await supabase
     .from("clientes")
     .select("proyeccion_pagos")
@@ -334,7 +299,7 @@ export async function updateProjection(
   const updatedProyeccionPagos = [...currentProyeccionPagos]
   updatedProyeccionPagos[index] = {
     fecha,
-    monto: Number(monto),
+    monto,
     descripcion: descripcion || null,
     estado: estado || "Pendiente",
   }
@@ -355,16 +320,15 @@ export async function updateProjection(
 
 export async function deleteProjection(clienteId: string, index: number) {
   console.log("--- Server Action: deleteProjection called ---")
-  console.log("Server: Received data:", { clienteId, index })
 
-  if (!clienteId || typeof clienteId !== "string" || clienteId.trim() === "") {
+  if (!clienteId || clienteId.trim() === "") {
     console.error("Validation Error: clienteId es nulo o inválido para deleteProjection.")
     return {
       success: false,
       message: "Error al eliminar proyección: El ID del cliente es requerido y debe ser una cadena válida.",
     }
   }
-  if (index === undefined || index === null || index < 0 || isNaN(Number(index))) {
+  if (isNaN(index) || index < 0) {
     console.error("Validation Error: index es nulo o inválido para deleteProjection.")
     return {
       success: false,
@@ -374,7 +338,6 @@ export async function deleteProjection(clienteId: string, index: number) {
 
   const supabase = createClient()
 
-  // Fetch current client data
   const { data: client, error: fetchClientError } = await supabase
     .from("clientes")
     .select("proyeccion_pagos")
@@ -413,13 +376,19 @@ export async function deleteProjection(clienteId: string, index: number) {
 export async function getPaymentsByClientId(id: string) {
   const supabase = createClient()
   const { data, error } = await supabase.from("clientes").select("historial_pagos").eq("id", id).single()
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error("Error fetching payments:", error)
+    return [] // Asegurar que siempre devuelve un array
+  }
   return data?.historial_pagos ?? []
 }
 
 export async function getProjectionsByClientId(id: string) {
   const supabase = createClient()
   const { data, error } = await supabase.from("clientes").select("proyeccion_pagos").eq("id", id).single()
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error("Error fetching projections:", error)
+    return [] // Asegurar que siempre devuelve un array
+  }
   return data?.proyeccion_pagos ?? []
 }

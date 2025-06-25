@@ -13,9 +13,9 @@ export async function addPartnership(prevState: any, formData: FormData) {
     monto_financiado: Number.parseFloat(formData.get("monto_financiado") as string),
     fecha_inicio: formData.get("fecha_inicio") as string,
     fecha_fin: formData.get("fecha_fin") as string,
-    responsabilidades: [], // Inicializar como JSON vacío o array vacío
-    expectativas: [], // Inicializar como JSON vacío o array vacío
-    historial_interacciones: [], // Inicializar como JSON vacío o array vacío
+    responsabilidades: [],
+    expectativas: [],
+    historial_interacciones: [],
   }
 
   const { error } = await supabase.from("partnerships").insert(newPartnership)
@@ -63,4 +63,14 @@ export async function deletePartnership(id: string) {
 
   revalidatePath("/partnerships")
   return { success: true, message: "Partnership eliminado exitosamente." }
+}
+
+export async function getPartnerships() {
+  const supabase = createClient()
+  const { data, error } = await supabase.from("partnerships").select("*").order("fecha_inicio", { ascending: false })
+  if (error) {
+    console.error("Error fetching partnerships:", error)
+    return [] // Asegurar que siempre devuelve un array
+  }
+  return data || []
 }

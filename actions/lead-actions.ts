@@ -7,14 +7,14 @@ import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
 export async function addLead(prevState: any, formData: FormData) {
   const supabase = createClient()
   const newLead: TablesInsert<"leads"> = {
-    cliente: formData.get("cliente") as string,
-    proyecto: formData.get("proyecto") as string,
+    nombre: formData.get("nombre") as string,
+    email: formData.get("email") as string,
+    telefono: formData.get("telefono") as string,
+    interes: formData.get("interes") as string,
     estado: formData.get("estado") as string,
-    proyeccion_usd: Number.parseFloat(formData.get("proyeccion_usd") as string),
-    canal_contacto: formData.get("canal_contacto") as string,
-    fecha_ultimo_contacto: formData.get("fecha_ultimo_contacto") as string,
-    tipo_software: formData.get("tipo_software") as string,
-    seguimiento: [], // Inicializar como JSON vacío o array vacío
+    fecha_contacto: formData.get("fecha_contacto") as string,
+    fuente: formData.get("fuente") as string,
+    comentarios: formData.get("comentarios") as string,
   }
 
   const { error } = await supabase.from("leads").insert(newLead)
@@ -32,13 +32,14 @@ export async function updateLead(prevState: any, formData: FormData) {
   const supabase = createClient()
   const id = formData.get("id") as string
   const updatedLead: TablesUpdate<"leads"> = {
-    cliente: formData.get("cliente") as string,
-    proyecto: formData.get("proyecto") as string,
+    nombre: formData.get("nombre") as string,
+    email: formData.get("email") as string,
+    telefono: formData.get("telefono") as string,
+    interes: formData.get("interes") as string,
     estado: formData.get("estado") as string,
-    proyeccion_usd: Number.parseFloat(formData.get("proyeccion_usd") as string),
-    canal_contacto: formData.get("canal_contacto") as string,
-    fecha_ultimo_contacto: formData.get("fecha_ultimo_contacto") as string,
-    tipo_software: formData.get("tipo_software") as string,
+    fecha_contacto: formData.get("fecha_contacto") as string,
+    fuente: formData.get("fuente") as string,
+    comentarios: formData.get("comentarios") as string,
   }
 
   const { error } = await supabase.from("leads").update(updatedLead).eq("id", id)
@@ -63,4 +64,14 @@ export async function deleteLead(id: string) {
 
   revalidatePath("/leads")
   return { success: true, message: "Lead eliminado exitosamente." }
+}
+
+export async function getLeads() {
+  const supabase = createClient()
+  const { data, error } = await supabase.from("leads").select("*").order("fecha_contacto", { ascending: false })
+  if (error) {
+    console.error("Error fetching leads:", error)
+    return [] // Asegurar que siempre devuelve un array
+  }
+  return data || []
 }

@@ -1,323 +1,230 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { createClient } from "@/lib/supabase/server"
 import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
 
 // --- Activos Corrientes Actions ---
-
-export async function addActivoCorriente(prevState: any, formData: FormData) {
+export async function addCurrentAsset(prevState: any, formData: FormData) {
   const supabase = createClient()
-  const data = Object.fromEntries(formData.entries()) as Partial<TablesInsert<"activos_corrientes">>
-
-  const { descripcion, valor, fecha_adquisicion, cuenta_id } = data
-
-  if (!descripcion || typeof descripcion !== "string" || descripcion.trim() === "") {
-    return { success: false, message: "La descripción es requerida." }
-  }
-  if (valor === undefined || valor === null || isNaN(Number(valor))) {
-    return { success: false, message: "El valor es requerido y debe ser un número." }
-  }
-  if (!fecha_adquisicion || typeof fecha_adquisicion !== "string" || fecha_adquisicion.trim() === "") {
-    return { success: false, message: "La fecha de adquisición es requerida." }
-  }
-  if (!cuenta_id || typeof cuenta_id !== "string" || cuenta_id.trim() === "") {
-    return { success: false, message: "El ID de la cuenta es requerido." }
+  const newAsset: TablesInsert<"activos_corrientes"> = {
+    nombre: formData.get("nombre") as string,
+    tipo: formData.get("tipo") as string,
+    monto: Number.parseFloat(formData.get("monto") as string),
+    fecha_adquisicion: formData.get("fecha_adquisicion") as string,
+    descripcion: formData.get("descripcion") as string,
   }
 
-  const newActivo: TablesInsert<"activos_corrientes"> = {
-    descripcion: descripcion,
-    valor: Number(valor),
-    fecha_adquisicion: fecha_adquisicion,
-    cuenta_id: cuenta_id,
-  }
-
-  const { error } = await supabase.from("activos_corrientes").insert(newActivo)
+  const { error } = await supabase.from("activos_corrientes").insert(newAsset)
 
   if (error) {
-    console.error("Error adding activo corriente:", error)
+    console.error("Error adding current asset:", error)
     return { success: false, message: `Error al añadir activo corriente: ${error.message}` }
   }
 
   revalidatePath("/activos-corrientes")
+  revalidatePath("/balance-sheet")
   return { success: true, message: "Activo corriente añadido exitosamente." }
 }
 
-export async function updateActivoCorriente(prevState: any, formData: FormData) {
+export async function updateCurrentAsset(prevState: any, formData: FormData) {
   const supabase = createClient()
-  const data = Object.fromEntries(formData.entries()) as Partial<TablesUpdate<"activos_corrientes">> & { id: string }
-
-  const { id, descripcion, valor, fecha_adquisicion, cuenta_id } = data
-
-  if (!id || typeof id !== "string" || id.trim() === "") {
-    return { success: false, message: "El ID del activo es requerido." }
-  }
-  if (!descripcion || typeof descripcion !== "string" || descripcion.trim() === "") {
-    return { success: false, message: "La descripción es requerida." }
-  }
-  if (valor === undefined || valor === null || isNaN(Number(valor))) {
-    return { success: false, message: "El valor es requerido y debe ser un número." }
-  }
-  if (!fecha_adquisicion || typeof fecha_adquisicion !== "string" || fecha_adquisicion.trim() === "") {
-    return { success: false, message: "La fecha de adquisición es requerida." }
-  }
-  if (!cuenta_id || typeof cuenta_id !== "string" || cuenta_id.trim() === "") {
-    return { success: false, message: "El ID de la cuenta es requerido." }
+  const id = formData.get("id") as string
+  const updatedAsset: TablesUpdate<"activos_corrientes"> = {
+    nombre: formData.get("nombre") as string,
+    tipo: formData.get("tipo") as string,
+    monto: Number.parseFloat(formData.get("monto") as string),
+    fecha_adquisicion: formData.get("fecha_adquisicion") as string,
+    descripcion: formData.get("descripcion") as string,
   }
 
-  const updatedActivo: TablesUpdate<"activos_corrientes"> = {
-    descripcion: descripcion,
-    valor: Number(valor),
-    fecha_adquisicion: fecha_adquisicion,
-    cuenta_id: cuenta_id,
-  }
-
-  const { error } = await supabase.from("activos_corrientes").update(updatedActivo).eq("id", id)
+  const { error } = await supabase.from("activos_corrientes").update(updatedAsset).eq("id", id)
 
   if (error) {
-    console.error("Error updating activo corriente:", error)
+    console.error("Error updating current asset:", error)
     return { success: false, message: `Error al actualizar activo corriente: ${error.message}` }
   }
 
   revalidatePath("/activos-corrientes")
+  revalidatePath("/balance-sheet")
   return { success: true, message: "Activo corriente actualizado exitosamente." }
 }
 
-export async function deleteActivoCorriente(id: string) {
+export async function deleteCurrentAsset(id: string) {
   const supabase = createClient()
   const { error } = await supabase.from("activos_corrientes").delete().eq("id", id)
 
   if (error) {
-    console.error("Error deleting activo corriente:", error)
+    console.error("Error deleting current asset:", error)
     return { success: false, message: `Error al eliminar activo corriente: ${error.message}` }
   }
 
   revalidatePath("/activos-corrientes")
+  revalidatePath("/balance-sheet")
   return { success: true, message: "Activo corriente eliminado exitosamente." }
 }
 
-export async function getActivosCorrientes() {
+export async function getCurrentAssets() {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("activos_corrientes")
     .select("*")
-    .order("created_at", { ascending: false })
+    .order("fecha_adquisicion", { ascending: false })
   if (error) {
-    console.error("Error fetching activos corrientes:", error)
-    return [] // Devolver array vacío en caso de error
+    console.error("Error fetching current assets:", error)
+    return [] // Asegurar que siempre devuelve un array
   }
-  return data || [] // Asegurar que siempre sea un array
+  return data || []
 }
 
 // --- Activos No Corrientes Actions ---
-
-export async function addActivoNoCorriente(prevState: any, formData: FormData) {
+export async function addNonCurrentAsset(prevState: any, formData: FormData) {
   const supabase = createClient()
-  const data = Object.fromEntries(formData.entries()) as Partial<TablesInsert<"activos_no_corrientes">>
-
-  const { descripcion, valor, depreciacion, valor_neto } = data
-
-  if (!descripcion || typeof descripcion !== "string" || descripcion.trim() === "") {
-    return { success: false, message: "La descripción es requerida." }
-  }
-  if (valor === undefined || valor === null || isNaN(Number(valor))) {
-    return { success: false, message: "El valor es requerido y debe ser un número." }
-  }
-  if (depreciacion === undefined || depreciacion === null || isNaN(Number(depreciacion))) {
-    return { success: false, message: "La depreciación es requerida y debe ser un número." }
-  }
-  if (valor_neto === undefined || valor_neto === null || isNaN(Number(valor_neto))) {
-    return { success: false, message: "El valor neto es requerido y debe ser un número." }
+  const newAsset: TablesInsert<"activos_no_corrientes"> = {
+    nombre: formData.get("nombre") as string,
+    tipo: formData.get("tipo") as string,
+    monto: Number.parseFloat(formData.get("monto") as string),
+    fecha_adquisicion: formData.get("fecha_adquisicion") as string,
+    vida_util_anios: Number.parseInt(formData.get("vida_util_anios") as string),
+    valor_residual: Number.parseFloat(formData.get("valor_residual") as string),
+    depreciacion_acumulada: Number.parseFloat(formData.get("depreciacion_acumulada") as string),
+    descripcion: formData.get("descripcion") as string,
   }
 
-  const newActivo: TablesInsert<"activos_no_corrientes"> = {
-    descripcion: descripcion,
-    valor: Number(valor),
-    depreciacion: Number(depreciacion),
-    valor_neto: Number(valor_neto),
-  }
-
-  const { error } = await supabase.from("activos_no_corrientes").insert(newActivo)
+  const { error } = await supabase.from("activos_no_corrientes").insert(newAsset)
 
   if (error) {
-    console.error("Error adding activo no corriente:", error)
+    console.error("Error adding non-current asset:", error)
     return { success: false, message: `Error al añadir activo no corriente: ${error.message}` }
   }
 
   revalidatePath("/non-current-assets")
+  revalidatePath("/balance-sheet")
   return { success: true, message: "Activo no corriente añadido exitosamente." }
 }
 
-export async function updateActivoNoCorriente(prevState: any, formData: FormData) {
+export async function updateNonCurrentAsset(prevState: any, formData: FormData) {
   const supabase = createClient()
-  const data = Object.fromEntries(formData.entries()) as Partial<TablesUpdate<"activos_no_corrientes">> & { id: string }
-
-  const { id, descripcion, valor, depreciacion, valor_neto } = data
-
-  if (!id || typeof id !== "string" || id.trim() === "") {
-    return { success: false, message: "El ID del activo es requerido." }
-  }
-  if (!descripcion || typeof descripcion !== "string" || descripcion.trim() === "") {
-    return { success: false, message: "La descripción es requerida." }
-  }
-  if (valor === undefined || valor === null || isNaN(Number(valor))) {
-    return { success: false, message: "El valor es requerido y debe ser un número." }
-  }
-  if (depreciacion === undefined || depreciacion === null || isNaN(Number(depreciacion))) {
-    return { success: false, message: "La depreciación es requerida y debe ser un número." }
-  }
-  if (valor_neto === undefined || valor_neto === null || isNaN(Number(valor_neto))) {
-    return { success: false, message: "El valor neto es requerido y debe ser un número." }
+  const id = formData.get("id") as string
+  const updatedAsset: TablesUpdate<"activos_no_corrientes"> = {
+    nombre: formData.get("nombre") as string,
+    tipo: formData.get("tipo") as string,
+    monto: Number.parseFloat(formData.get("monto") as string),
+    fecha_adquisicion: formData.get("fecha_adquisicion") as string,
+    vida_util_anios: Number.parseInt(formData.get("vida_util_anios") as string),
+    valor_residual: Number.parseFloat(formData.get("valor_residual") as string),
+    depreciacion_acumulada: Number.parseFloat(formData.get("depreciacion_acumulada") as string),
+    descripcion: formData.get("descripcion") as string,
   }
 
-  const updatedActivo: TablesUpdate<"activos_no_corrientes"> = {
-    descripcion: descripcion,
-    valor: Number(valor),
-    depreciacion: Number(depreciacion),
-    valor_neto: Number(valor_neto),
-  }
-
-  const { error } = await supabase.from("activos_no_corrientes").update(updatedActivo).eq("id", id)
+  const { error } = await supabase.from("activos_no_corrientes").update(updatedAsset).eq("id", id)
 
   if (error) {
-    console.error("Error updating activo no corriente:", error)
+    console.error("Error updating non-current asset:", error)
     return { success: false, message: `Error al actualizar activo no corriente: ${error.message}` }
   }
 
   revalidatePath("/non-current-assets")
+  revalidatePath("/balance-sheet")
   return { success: true, message: "Activo no corriente actualizado exitosamente." }
 }
 
-export async function deleteActivoNoCorriente(id: string) {
+export async function deleteNonCurrentAsset(id: string) {
   const supabase = createClient()
   const { error } = await supabase.from("activos_no_corrientes").delete().eq("id", id)
 
   if (error) {
-    console.error("Error deleting activo no corriente:", error)
+    console.error("Error deleting non-current asset:", error)
     return { success: false, message: `Error al eliminar activo no corriente: ${error.message}` }
   }
 
   revalidatePath("/non-current-assets")
+  revalidatePath("/balance-sheet")
   return { success: true, message: "Activo no corriente eliminado exitosamente." }
 }
 
-export async function getActivosNoCorrientes() {
+export async function getNonCurrentAssets() {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("activos_no_corrientes")
     .select("*")
-    .order("created_at", { ascending: false })
+    .order("fecha_adquisicion", { ascending: false })
   if (error) {
-    console.error("Error fetching activos no corrientes:", error)
-    return [] // Devolver array vacío en caso de error
+    console.error("Error fetching non-current assets:", error)
+    return [] // Asegurar que siempre devuelve un array
   }
-  return data || [] // Asegurar que siempre sea un array
+  return data || []
 }
 
 // --- Pasivos Corrientes Actions ---
-
-export async function addPasivoCorriente(prevState: any, formData: FormData) {
+export async function addCurrentLiability(prevState: any, formData: FormData) {
   const supabase = createClient()
-  const data = Object.fromEntries(formData.entries()) as Partial<TablesInsert<"pasivos_corrientes">>
-
-  const { descripcion, monto, fecha_vencimiento, estado } = data
-
-  if (!descripcion || typeof descripcion !== "string" || descripcion.trim() === "") {
-    return { success: false, message: "La descripción es requerida." }
-  }
-  if (monto === undefined || monto === null || isNaN(Number(monto))) {
-    return { success: false, message: "El monto es requerido y debe ser un número." }
-  }
-  if (!fecha_vencimiento || typeof fecha_vencimiento !== "string" || fecha_vencimiento.trim() === "") {
-    return { success: false, message: "La fecha de vencimiento es requerida." }
-  }
-  if (!estado || typeof estado !== "string" || estado.trim() === "") {
-    return { success: false, message: "El estado es requerido." }
+  const newLiability: TablesInsert<"pasivos_corrientes"> = {
+    nombre: formData.get("nombre") as string,
+    tipo: formData.get("tipo") as string,
+    monto: Number.parseFloat(formData.get("monto") as string),
+    fecha_vencimiento: formData.get("fecha_vencimiento") as string,
+    descripcion: formData.get("descripcion") as string,
   }
 
-  const newPasivo: TablesInsert<"pasivos_corrientes"> = {
-    descripcion: descripcion,
-    monto: Number(monto),
-    fecha_vencimiento: fecha_vencimiento,
-    estado: estado,
-  }
-
-  const { error } = await supabase.from("pasivos_corrientes").insert(newPasivo)
+  const { error } = await supabase.from("pasivos_corrientes").insert(newLiability)
 
   if (error) {
-    console.error("Error adding pasivo corriente:", error)
+    console.error("Error adding current liability:", error)
     return { success: false, message: `Error al añadir pasivo corriente: ${error.message}` }
   }
 
   revalidatePath("/current-liabilities")
+  revalidatePath("/balance-sheet")
   return { success: true, message: "Pasivo corriente añadido exitosamente." }
 }
 
-export async function updatePasivoCorriente(prevState: any, formData: FormData) {
+export async function updateCurrentLiability(prevState: any, formData: FormData) {
   const supabase = createClient()
-  const data = Object.fromEntries(formData.entries()) as Partial<TablesUpdate<"pasivos_corrientes">> & { id: string }
-
-  const { id, descripcion, monto, fecha_vencimiento, estado } = data
-
-  if (!id || typeof id !== "string" || id.trim() === "") {
-    return { success: false, message: "El ID del pasivo es requerido." }
-  }
-  if (!descripcion || typeof descripcion !== "string" || descripcion.trim() === "") {
-    return { success: false, message: "La descripción es requerida." }
-  }
-  if (monto === undefined || monto === null || isNaN(Number(monto))) {
-    return { success: false, message: "El monto es requerido y debe ser un número." }
-  }
-  if (!fecha_vencimiento || typeof fecha_vencimiento !== "string" || fecha_vencimiento.trim() === "") {
-    return { success: false, message: "La fecha de vencimiento es requerida." }
-  }
-  if (!estado || typeof estado !== "string" || estado.trim() === "") {
-    return { success: false, message: "El estado es requerido." }
+  const id = formData.get("id") as string
+  const updatedLiability: TablesUpdate<"pasivos_corrientes"> = {
+    nombre: formData.get("nombre") as string,
+    tipo: formData.get("tipo") as string,
+    monto: Number.parseFloat(formData.get("monto") as string),
+    fecha_vencimiento: formData.get("fecha_vencimiento") as string,
+    descripcion: formData.get("descripcion") as string,
   }
 
-  const updatedPasivo: TablesUpdate<"pasivos_corrientes"> = {
-    descripcion: descripcion,
-    monto: Number(monto),
-    fecha_vencimiento: fecha_vencimiento,
-    estado: estado,
-  }
-
-  const { error } = await supabase.from("pasivos_corrientes").update(updatedPasivo).eq("id", id)
+  const { error } = await supabase.from("pasivos_corrientes").update(updatedLiability).eq("id", id)
 
   if (error) {
-    console.error("Error updating pasivo corriente:", error)
+    console.error("Error updating current liability:", error)
     return { success: false, message: `Error al actualizar pasivo corriente: ${error.message}` }
   }
 
   revalidatePath("/current-liabilities")
+  revalidatePath("/balance-sheet")
   return { success: true, message: "Pasivo corriente actualizado exitosamente." }
 }
 
-export async function deletePasivoCorriente(id: string) {
+export async function deleteCurrentLiability(id: string) {
   const supabase = createClient()
   const { error } = await supabase.from("pasivos_corrientes").delete().eq("id", id)
 
   if (error) {
-    console.error("Error deleting pasivo corriente:", error)
+    console.error("Error deleting current liability:", error)
     return { success: false, message: `Error al eliminar pasivo corriente: ${error.message}` }
   }
 
   revalidatePath("/current-liabilities")
+  revalidatePath("/balance-sheet")
   return { success: true, message: "Pasivo corriente eliminado exitosamente." }
 }
 
-export async function getPasivosCorrientes() {
+export async function getCurrentLiabilities() {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("pasivos_corrientes")
     .select("*")
-    .order("created_at", { ascending: false })
+    .order("fecha_vencimiento", { ascending: false })
   if (error) {
-    console.error("Error fetching pasivos corrientes:", error)
-    return [] // Devolver array vacío en caso de error
+    console.error("Error fetching current liabilities:", error)
+    return [] // Asegurar que siempre devuelve un array
   }
-  return data || [] // Asegurar que siempre sea un array
+  return data || []
 }
-
-// Re-export explícito por si el bundler lo omite
-export { deletePasivoCorriente as deleteLiability }

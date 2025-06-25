@@ -1,110 +1,117 @@
 "use client"
 
-import type React from "react"
-
-import { useActionState, useState, useEffect, startTransition } from "react"
+import { useActionState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { addActivoCorriente, updateActivoCorriente } from "@/actions/asset-liability-actions"
-import type { Tables } from "@/lib/database.types"
+import { addCurrentAsset, updateCurrentAsset } from "@/actions/asset-liability-actions"
+import type { TablesUpdate } from "@/lib/database.types"
 
 interface ActivoCorrienteFormProps {
-  initialData?: Tables<"activos_corrientes"> | null
+  initialData?: TablesUpdate<"activos_corrientes"> | null
   onSuccess?: () => void
   onCancel?: () => void
 }
 
 export function ActivoCorrienteForm({ initialData, onSuccess, onCancel }: ActivoCorrienteFormProps) {
   const isEditing = !!initialData
-  const action = isEditing ? updateActivoCorriente : addActivoCorriente
-  const [state, formAction, isPending] = useActionState(action, null)
+  const action = isEditing ? updateCurrentAsset : addCurrentAsset
+  const [state, formAction, isPending] = useActionState(action, { success: false, message: "" })
   const { toast } = useToast()
-
-  const [nombre, setNombre] = useState(initialData?.nombre || "")
-  const [monto, setMonto] = useState(initialData?.monto?.toString() || "")
-  const [fechaAdquisicion, setFechaAdquisicion] = useState(initialData?.fecha_adquisicion || "")
-  const [descripcion, setDescripcion] = useState(initialData?.descripcion || "")
+  const formRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
-    if (state?.success) {
+    if (state?.message) {
       toast({
-        title: "Éxito",
+        title: state.success ? "Éxito" : "Error",
         description: state.message,
-        variant: "default",
+        variant: state.success ? "default" : "destructive",
       })
-      onSuccess?.()
-    } else if (state?.message) {
-      toast({
-        title: "Error",
-        description: state.message,
-        variant: "destructive",
-      })
+      if (state.success) {
+        onSuccess?.()
+        formRef.current?.reset()
+      }
     }
   }, [state, toast, onSuccess])
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const data = {
-      nombre,
-      monto: Number.parseFloat(monto),
-      fecha_adquisicion: fechaAdquisicion,
-      ...(isEditing && { id: initialData?.id }), // Añadir ID solo si estamos editando
-    }
-    startTransition(() => {
-      formAction(data)
-    })
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
-      <div className="space-y-2">
-        <Label htmlFor="nombre">Nombre del Activo</Label>
+    <form ref={formRef} action={formAction} className="grid gap-4 py-4">
+      {isEditing && <input type="hidden" name="id" value={initialData.id} />}
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="nombre" className="text-right">
+          Nombre
+        </Label>
         <Input
           id="nombre"
           name="nombre"
-          placeholder="Ej: Efectivo en Caja"
+          placeholder="Ej: Efectivo, Cuentas por Cobrar"
+          defaultValue={initialData?.nombre || ""}
+          className="col-span-3"
           required
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="monto">Monto</Label>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="tipo" className="text-right">
+          Tipo
+        </Label>
+        <Select name="tipo" defaultValue={initialData?.tipo || "Efectivo"}>
+          <SelectTrigger className="col-span-3">
+            <SelectValue placeholder="Selecciona un tipo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Efectivo">Efectivo</SelectItem>
+            <SelectItem value="Cuentas por Cobrar">Cuentas por Cobrar</SelectItem>
+            <SelectItem value="Inventario">Inventario</SelectItem>
+            <SelectItem value="Inversiones a Corto Plazo">Inversiones a Corto Plazo</SelectItem>
+            <SelectItem value="Otros">Otros</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="monto" className="text-right">
+          Monto (USD)
+        </Label>
         <Input
           id="monto"
           name="monto"
           type="number"
           step="0.01"
           placeholder="0.00"
+          defaultValue={initialData?.monto?.toString() || ""}
+          className="col-span-3"
           required
-          value={monto}
-          onChange={(e) => setMonto(e.target.value)}
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="fecha_adquisicion">Fecha de Adquisición</Label>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="fecha_adquisicion" className="text-right">
+          Fecha Adquisición
+        </Label>
         <Input
           id="fecha_adquisicion"
           name="fecha_adquisicion"
           type="date"
-          value={fechaAdquisicion}
-          onChange={(e) => setFechaAdquisicion(e.target.value)}
+          defaultValue={initialData?.fecha_adquisicion || new Date().toISOString().split("T")[0]}
+          className="col-span-3"
+          required
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="descripcion">Descripción</Label>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="descripcion" className="text-right">
+          Descripción
+        </Label>
         <Textarea
           id="descripcion"
           name="descripcion"
-          value={descripcion}
-          onChange={(e) => setDescripcion(e.target.value)}
+          placeholder="Detalles adicionales del activo"
+          defaultValue={initialData?.descripcion || ""}
+          className="col-span-3"
         />
       </div>
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+      <div className="flex justify-end gap-2 mt-4">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
           Cancelar
         </Button>
         <Button type="submit" disabled={isPending}>
