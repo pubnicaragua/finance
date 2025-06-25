@@ -1,29 +1,13 @@
 "use client"
 
 import type React from "react"
-
 import { useActionState, useState, useEffect, startTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-
-// Define a simple server action for testing
-async function testAction(prevState: any, data: { testInput: string }) {
-  "use server"
-  console.log("--- Server Action: testAction called ---")
-  console.log("Server: Received data:", data)
-
-  // Simulate a delay
-  await new Promise((resolve) => setTimeout(resolve, 500))
-
-  if (data.testInput === "error") {
-    return { success: false, message: "Simulated error: Input was 'error'." }
-  }
-
-  return { success: true, message: `Server received: ${data.testInput}` }
-}
+import { testAction } from "./actions" // ← ahora importamos la Server Action
 
 export default function TestFormPage() {
   const [state, formAction, isPending] = useActionState(testAction, null)
@@ -32,25 +16,16 @@ export default function TestFormPage() {
 
   useEffect(() => {
     if (state?.success) {
-      toast({
-        title: "Éxito",
-        description: state.message,
-        variant: "default",
-      })
+      toast({ title: "Éxito", description: state.message, variant: "default" })
     } else if (state?.message) {
-      toast({
-        title: "Error",
-        description: state.message,
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: state.message, variant: "destructive" })
     }
   }, [state, toast])
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault() // Prevent default form submission
-    console.log("Client: Submitting test data:", { testInput })
+    event.preventDefault()
     startTransition(() => {
-      formAction({ testInput }) // Pass the plain object to the server action
+      formAction({ testInput })
     })
   }
 
@@ -66,15 +41,14 @@ export default function TestFormPage() {
               <Label htmlFor="testInput">Entrada de Prueba</Label>
               <Input
                 id="testInput"
-                name="testInput"
-                placeholder="Escribe algo aquí"
+                placeholder="Escribe algo"
                 required
                 value={testInput}
                 onChange={(e) => setTestInput(e.target.value)}
               />
             </div>
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Enviando..." : "Enviar Prueba"}
+              {isPending ? "Enviando…" : "Enviar Prueba"}
             </Button>
             {state && (
               <p className={`mt-2 text-sm ${state.success ? "text-green-600" : "text-red-600"}`}>{state.message}</p>
