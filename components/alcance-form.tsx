@@ -1,6 +1,8 @@
 "use client"
 
-import { useActionState, useState, useEffect } from "react"
+import type React from "react"
+
+import { useActionState, useState, useEffect, startTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -45,11 +47,23 @@ export function AlcanceForm({ clienteId, initialData, onSuccess, onCancel }: Alc
     }
   }, [state, toast, onSuccess])
 
-  return (
-    <form action={formAction} className="grid gap-4">
-      <input type="hidden" name="cliente_id" value={clienteId} />
-      {isEditing && <input type="hidden" name="id" value={initialData.id} />}
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const data = {
+      cliente_id: clienteId,
+      nombre_modulo: nombreModulo,
+      descripcion,
+      fecha_implementacion: fechaImplementacion,
+      estado,
+      ...(isEditing && { id: initialData?.id }), // Añadir ID solo si estamos editando
+    }
+    startTransition(() => {
+      formAction(data)
+    })
+  }
 
+  return (
+    <form onSubmit={handleSubmit} className="grid gap-4">
       <div className="space-y-2">
         <Label htmlFor="nombre_modulo">Nombre del Módulo</Label>
         <Input

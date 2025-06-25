@@ -1,6 +1,8 @@
 "use client"
 
-import { useActionState, useState, useEffect } from "react"
+import type React from "react"
+
+import { useActionState, useState, useEffect, startTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -44,11 +46,23 @@ export function AvanceForm({ clienteId, initialData, onSuccess, onCancel }: Avan
     }
   }, [state, toast, onSuccess])
 
-  return (
-    <form action={formAction} className="grid gap-4">
-      <input type="hidden" name="cliente_id" value={clienteId} />
-      {isEditing && <input type="hidden" name="id" value={initialData.id} />}
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const data = {
+      cliente_id: clienteId,
+      fecha,
+      descripcion,
+      porcentaje_avance: Number.parseFloat(porcentajeAvance),
+      comentarios_cliente: comentariosCliente,
+      ...(isEditing && { id: initialData?.id }), // Añadir ID solo si estamos editando
+    }
+    startTransition(() => {
+      formAction(data)
+    })
+  }
 
+  return (
+    <form onSubmit={handleSubmit} className="grid gap-4">
       <div className="space-y-2">
         <Label htmlFor="fecha">Fecha</Label>
         <Input id="fecha" name="fecha" type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} />

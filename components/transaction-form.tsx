@@ -1,11 +1,14 @@
 "use client"
 
 import type React from "react"
-import { useActionState, useState, useEffect, startTransition } from "react" // Importar startTransition
+
+import { useActionState, useState, useEffect, startTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { createTransaction, updateTransaction } from "@/actions/transaction-actions"
 import type { Tables } from "@/lib/database.types"
@@ -16,18 +19,22 @@ interface TransactionFormProps {
   onCancel?: () => void
 }
 
-export function TransactionForm({ initialData, onSuccess, onCancel }: TransactionFormProps) {
+export default function TransactionForm({ initialData, onSuccess, onCancel }: TransactionFormProps) {
   const isEditing = !!initialData
   const action = isEditing ? updateTransaction : createTransaction
   const [state, formAction, isPending] = useActionState(action, null)
   const { toast } = useToast()
 
-  const [tipo, setTipo] = useState<"ingreso" | "egreso">(initialData?.tipo || "ingreso")
+  const [fecha, setFecha] = useState(initialData?.fecha || "")
+  const [tipo, setTipo] = useState<Tables<"transacciones">["tipo"]>(initialData?.tipo || "ingreso")
   const [monto, setMonto] = useState(initialData?.monto?.toString() || "")
-  const [vendedor, setVendedor] = useState(initialData?.vendedor || "")
-  const [comision, setComision] = useState(initialData?.comision?.toString() || "")
+  const [descripcion, setDescripcion] = useState(initialData?.descripcion || "")
+  const [categoria, setCategoria] = useState(initialData?.categoria || "")
+  const [aplicarComision, setAplicarComision] = useState(initialData?.aplicar_comision || false)
+  const [vendedorComision, setVendedorComision] = useState(initialData?.vendedor_comision || "")
+  const [comisionAplicada, setComisionAplicada] = useState(initialData?.comision_aplicada?.toString() || "")
 
-  const showComisionFields = tipo === "ingreso"
+  const vendedores = ["Ileana", "Edxel", "Nahuel"] // Lista de vendedores
 
   useEffect(() => {
     if (state?.success) {
@@ -46,23 +53,19 @@ export function TransactionForm({ initialData, onSuccess, onCancel }: Transactio
     }
   }, [state, toast, onSuccess])
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const formData = new FormData(event.currentTarget)
-
     const data = {
-      ...(isEditing && { id: initialData.id }),
-      fecha: formData.get("fecha") as string,
-      tipo: formData.get("tipo") as "ingreso" | "egreso",
-      monto: Number.parseFloat(formData.get("monto") as string),
-      descripcion: formData.get("descripcion") as string,
-      categoria: formData.get("categoria") as string,
-      vendedor: showComisionFields ? (formData.get("vendedor") as string) : null,
-      comision: showComisionFields ? Number.parseFloat(formData.get("comision") as string) : null,
+      fecha,
+      tipo,
+      monto: Number.parseFloat(monto),
+      descripcion,
+      categoria,
+      vendedor: aplicarComision ? vendedorComision : null,
+      comision: aplicarComision ? Number.parseFloat(comisionAplicada) : null,
+      ...(isEditing && { id: initialData?.id }), // Añadir ID solo si estamos editando
     }
-    console.log("Client: Submitting data:", data)
     startTransition(() => {
-      // Envuelve la llamada a formAction en startTransition
       formAction(data)
     })
   }
@@ -71,17 +74,11 @@ export function TransactionForm({ initialData, onSuccess, onCancel }: Transactio
     <form onSubmit={handleSubmit} className="grid gap-4">
       <div className="space-y-2">
         <Label htmlFor="fecha">Fecha</Label>
-        <Input
-          id="fecha"
-          name="fecha"
-          type="date"
-          required
-          defaultValue={initialData?.fecha || new Date().toISOString().split("T")[0]}
-        />
+        <Input id="fecha" name="fecha" type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="tipo">Tipo</Label>
-        <Select name="tipo" value={tipo} onValueChange={(value) => setTipo(value as "ingreso" | "egreso")}>
+        <Label htmlFor="tipo">Tipo de Transacción</Label>
+        <Select name="tipo" value={tipo} onValueChange={(value: Tables<"transacciones">["tipo"]) => setTipo(value)}>
           <SelectTrigger>
             <SelectValue placeholder="Selecciona tipo" />
           </SelectTrigger>
@@ -92,7 +89,7 @@ export function TransactionForm({ initialData, onSuccess, onCancel }: Transactio
         </Select>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="monto">Monto (USD)</Label>
+        <Label htmlFor="monto">Monto</Label>
         <Input
           id="monto"
           name="monto"
@@ -106,40 +103,67 @@ export function TransactionForm({ initialData, onSuccess, onCancel }: Transactio
       </div>
       <div className="space-y-2">
         <Label htmlFor="descripcion">Descripción</Label>
-        <Input id="descripcion" name="descripcion" required defaultValue={initialData?.descripcion || ""} />
+        <Textarea
+          id="descripcion"
+          name="descripcion"
+          placeholder="Descripción de la transacción"
+          value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="categoria">Categoría</Label>
-        <Input id="categoria" name="categoria" required defaultValue={initialData?.categoria || ""} />
+        <Input
+          id="categoria"
+          name="categoria"
+          placeholder="Ej: Ventas, Salarios, Alquiler"
+          value={categoria}
+          onChange={(e) => setCategoria(e.target.value)}
+        />
       </div>
 
-      {showComisionFields && (
+      {tipo === "ingreso" && (
         <>
-          <div className="space-y-2">
-            <Label htmlFor="vendedor">Vendedor</Label>
-            <Select name="vendedor" value={vendedor} onValueChange={setVendedor}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona vendedor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Ileana">Ileana</SelectItem>
-                <SelectItem value="Edxel">Edxel</SelectItem>
-                <SelectItem value="Nahuel">Nahuel</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="comision">Comisión (%)</Label>
-            <Input
-              id="comision"
-              name="comision"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={comision}
-              onChange={(e) => setComision(e.target.value)}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="aplicar_comision"
+              checked={aplicarComision}
+              onCheckedChange={(checked) => setAplicarComision(!!checked)}
             />
+            <Label htmlFor="aplicar_comision">Aplicar Comisión</Label>
           </div>
+
+          {aplicarComision && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="vendedor_comision">Vendedor</Label>
+                <Select name="vendedor_comision" value={vendedorComision} onValueChange={setVendedorComision}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un vendedor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vendedores.map((vendedor) => (
+                      <SelectItem key={vendedor} value={vendedor}>
+                        {vendedor}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="comision_aplicada">Monto de Comisión</Label>
+                <Input
+                  id="comision_aplicada"
+                  name="comision_aplicada"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={comisionAplicada}
+                  onChange={(e) => setComisionAplicada(e.target.value)}
+                />
+              </div>
+            </>
+          )}
         </>
       )}
 
@@ -161,4 +185,5 @@ export function TransactionForm({ initialData, onSuccess, onCancel }: Transactio
   )
 }
 
-export default TransactionForm // Añadido export default
+// --- Named export requerido por otros módulos ---
+export { default as TransactionForm } from "./transaction-form"

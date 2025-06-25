@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useActionState, useState, useEffect, startTransition } from "react" // Importar startTransition
+
+import { useActionState, useState, useEffect, startTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -44,19 +45,15 @@ export function ActivoCorrienteForm({ initialData, onSuccess, onCancel }: Activo
     }
   }, [state, toast, onSuccess])
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const formData = new FormData(event.currentTarget)
     const data = {
-      ...(isEditing && { id: initialData.id }),
-      nombre: formData.get("nombre") as string,
-      monto: Number.parseFloat(formData.get("monto") as string),
-      fecha_adquisicion: formData.get("fecha_adquisicion") as string,
-      descripcion: formData.get("descripcion") as string,
+      nombre,
+      monto: Number.parseFloat(monto),
+      fecha_adquisicion: fechaAdquisicion,
+      ...(isEditing && { id: initialData?.id }), // Añadir ID solo si estamos editando
     }
-    console.log("Client: Submitting activo corriente data:", data)
     startTransition(() => {
-      // Envuelve la llamada a formAction en startTransition
       formAction(data)
     })
   }
@@ -64,11 +61,18 @@ export function ActivoCorrienteForm({ initialData, onSuccess, onCancel }: Activo
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
       <div className="space-y-2">
-        <Label htmlFor="nombre">Nombre</Label>
-        <Input id="nombre" name="nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        <Label htmlFor="nombre">Nombre del Activo</Label>
+        <Input
+          id="nombre"
+          name="nombre"
+          placeholder="Ej: Efectivo en Caja"
+          required
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+        />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="monto">Monto (USD)</Label>
+        <Label htmlFor="monto">Monto</Label>
         <Input
           id="monto"
           name="monto"
@@ -86,7 +90,6 @@ export function ActivoCorrienteForm({ initialData, onSuccess, onCancel }: Activo
           id="fecha_adquisicion"
           name="fecha_adquisicion"
           type="date"
-          required
           value={fechaAdquisicion}
           onChange={(e) => setFechaAdquisicion(e.target.value)}
         />

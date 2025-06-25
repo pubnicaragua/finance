@@ -1,35 +1,8 @@
-"use server" // Asegura que este archivo solo se ejecute en el servidor
+"use server"
 
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
-import { revalidatePath } from "next/cache" // Para revalidar la caché y actualizar el frontend
+import { createClient } from "@/lib/supabase/server"
+import { revalidatePath } from "next/cache"
 import type { Tables } from "@/lib/database.types"
-
-// Helper function to create Supabase client for server actions
-function getSupabaseServerClient() {
-  const cookieStore = cookies()
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
-      },
-      set(name: string, value: string, options: any) {
-        try {
-          cookieStore.set({ name, value, ...options })
-        } catch (error) {
-          console.warn("Could not set cookie from server:", error)
-        }
-      },
-      remove(name: string, options: any) {
-        try {
-          cookieStore.set({ name, value: "", ...options })
-        } catch (error) {
-          console.warn("Could not remove cookie from server:", error)
-        }
-      },
-    },
-  })
-}
 
 // Helper function to update JSONB arrays
 async function updateClientJsonbArray(
@@ -37,7 +10,7 @@ async function updateClientJsonbArray(
   fieldName: "historial_pagos" | "proyeccion_pagos",
   newArray: any[],
 ) {
-  const supabase = getSupabaseServerClient()
+  const supabase = createClient()
   const { error } = await supabase
     .from("clientes")
     .update({ [fieldName]: newArray as Tables<"clientes">[typeof fieldName] })
@@ -63,7 +36,7 @@ export async function addPayment(
 
   const { clienteId, fecha, monto, descripcion } = data
 
-  const supabase = getSupabaseServerClient()
+  const supabase = createClient()
   const { data: client, error: fetchError } = await supabase
     .from("clientes")
     .select("historial_pagos")
@@ -91,7 +64,7 @@ export async function updatePayment(
 
   const { clienteId, index, fecha, monto, descripcion } = data
 
-  const supabase = getSupabaseServerClient()
+  const supabase = createClient()
   const { data: client, error: fetchError } = await supabase
     .from("clientes")
     .select("historial_pagos")
@@ -115,7 +88,7 @@ export async function updatePayment(
 }
 
 export async function deletePayment(clientId: string, index: number) {
-  const supabase = getSupabaseServerClient()
+  const supabase = createClient()
   const { data: client, error: fetchError } = await supabase
     .from("clientes")
     .select("historial_pagos")
@@ -148,7 +121,7 @@ export async function addProjection(
 
   const { clienteId, fecha, monto, pagado } = data
 
-  const supabase = getSupabaseServerClient()
+  const supabase = createClient()
   const { data: client, error: fetchError } = await supabase
     .from("clientes")
     .select("proyeccion_pagos")
@@ -176,7 +149,7 @@ export async function updateProjection(
 
   const { clienteId, index, fecha, monto, pagado } = data
 
-  const supabase = getSupabaseServerClient()
+  const supabase = createClient()
   const { data: client, error: fetchError } = await supabase
     .from("clientes")
     .select("proyeccion_pagos")
@@ -200,7 +173,7 @@ export async function updateProjection(
 }
 
 export async function deleteProjection(clientId: string, index: number) {
-  const supabase = getSupabaseServerClient()
+  const supabase = createClient()
   const { data: client, error: fetchError } = await supabase
     .from("clientes")
     .select("proyeccion_pagos")

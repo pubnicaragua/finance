@@ -16,7 +16,7 @@ interface PasivoCorrienteFormProps {
   onCancel?: () => void
 }
 
-export function PasivoCorrienteForm({ initialData, onSuccess, onCancel }: PasivoCorrienteFormProps) {
+export default function PasivoCorrienteForm({ initialData, onSuccess, onCancel }: PasivoCorrienteFormProps) {
   const isEditing = !!initialData
   const action = isEditing ? updatePasivoCorriente : addPasivoCorriente
   const [state, formAction, isPending] = useActionState(action, null)
@@ -44,19 +44,15 @@ export function PasivoCorrienteForm({ initialData, onSuccess, onCancel }: Pasivo
     }
   }, [state, toast, onSuccess])
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const formData = new FormData(event.currentTarget)
     const data = {
-      ...(isEditing && { id: initialData.id }),
-      nombre: formData.get("nombre") as string,
-      monto: Number.parseFloat(formData.get("monto") as string),
-      fecha_vencimiento: formData.get("fecha_vencimiento") as string,
-      descripcion: formData.get("descripcion") as string,
+      nombre,
+      monto: Number.parseFloat(monto),
+      fecha_vencimiento: fechaVencimiento,
+      ...(isEditing && { id: initialData?.id }), // Añadir ID solo si estamos editando
     }
-    console.log("Client: Submitting pasivo corriente data:", data)
     startTransition(() => {
-      // Envuelve la llamada a formAction en startTransition
       formAction(data)
     })
   }
@@ -64,11 +60,18 @@ export function PasivoCorrienteForm({ initialData, onSuccess, onCancel }: Pasivo
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
       <div className="space-y-2">
-        <Label htmlFor="nombre">Nombre</Label>
-        <Input id="nombre" name="nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        <Label htmlFor="nombre">Nombre del Pasivo Corriente</Label>
+        <Input
+          id="nombre"
+          name="nombre"
+          placeholder="Ej: Cuentas por Pagar"
+          required
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+        />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="monto">Monto (USD)</Label>
+        <Label htmlFor="monto">Monto</Label>
         <Input
           id="monto"
           name="monto"
@@ -86,7 +89,6 @@ export function PasivoCorrienteForm({ initialData, onSuccess, onCancel }: Pasivo
           id="fecha_vencimiento"
           name="fecha_vencimiento"
           type="date"
-          required
           value={fechaVencimiento}
           onChange={(e) => setFechaVencimiento(e.target.value)}
         />
@@ -118,6 +120,6 @@ export function PasivoCorrienteForm({ initialData, onSuccess, onCancel }: Pasivo
   )
 }
 
-export default PasivoCorrienteForm
-export { PasivoCorrienteForm as CurrentLiabilityForm }
-;<span className="text-muted-foreground">{"// alias requerido por Vercel"}</span>
+// --- Named exports requeridos por otros módulos ---
+export { default as PasivoCorrienteForm } from "./pasivo-corriente-form"
+export { default as CurrentLiabilityForm } from "./pasivo-corriente-form"

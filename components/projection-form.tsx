@@ -1,17 +1,19 @@
 "use client"
 
 import type React from "react"
-import { useActionState, useState, useEffect, startTransition } from "react" // Importar startTransition
+
+import { useActionState, useState, useEffect, startTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { addProjection, updateProjection } from "@/actions/payment-projection-actions"
+import type { Tables } from "@/lib/database.types"
 
 interface ProjectionFormProps {
   clienteId: string
-  initialData?: { fecha: string; monto: number; pagado: boolean; index?: number } | null
+  initialData?: Tables<"clientes">["proyeccion_pagos"][number] & { index?: number }
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -43,17 +45,15 @@ export function ProjectionForm({ clienteId, initialData, onSuccess, onCancel }: 
     }
   }, [state, toast, onSuccess])
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const formData = new FormData(event.currentTarget)
     const data = {
-      clienteId: clienteId,
-      fecha: formData.get("fecha") as string,
-      monto: Number.parseFloat(formData.get("monto") as string),
-      pagado: formData.get("pagado") === "on", // Checkbox value is "on" when checked
-      ...(isEditing && { index: initialData.index }),
+      clienteId,
+      fecha,
+      monto: Number.parseFloat(monto),
+      pagado,
+      ...(isEditing && { index: initialData?.index }), // Añadir índice solo si estamos editando
     }
-    console.log("Client: Submitting data:", data)
     startTransition(() => {
       formAction(data)
     })
@@ -66,7 +66,7 @@ export function ProjectionForm({ clienteId, initialData, onSuccess, onCancel }: 
         <Input id="fecha" name="fecha" type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="monto">Monto (USD)</Label>
+        <Label htmlFor="monto">Monto</Label>
         <Input
           id="monto"
           name="monto"
@@ -79,12 +79,7 @@ export function ProjectionForm({ clienteId, initialData, onSuccess, onCancel }: 
         />
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox
-          id="pagado"
-          name="pagado"
-          checked={pagado}
-          onCheckedChange={(checked) => setPagado(checked as boolean)}
-        />
+        <Checkbox id="pagado" checked={pagado} onCheckedChange={(checked) => setPagado(!!checked)} />
         <Label htmlFor="pagado">Pagado</Label>
       </div>
       <div className="flex justify-end gap-2">

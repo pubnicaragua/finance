@@ -1,33 +1,7 @@
 "use server"
 
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
+import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
-
-function getSupabaseServerClient() {
-  const cookieStore = cookies()
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
-      },
-      set(name: string, value: string, options: any) {
-        try {
-          cookieStore.set({ name, value, ...options })
-        } catch (error) {
-          console.warn("Could not set cookie from server:", error)
-        }
-      },
-      remove(name: string, options: any) {
-        try {
-          cookieStore.set({ name, value: "", ...options })
-        } catch (error) {
-          console.warn("Could not remove cookie from server:", error)
-        }
-      },
-    },
-  })
-}
 
 export async function createTransaction(
   prevState: any,
@@ -44,7 +18,7 @@ export async function createTransaction(
   console.log("--- Server Action: createTransaction called ---")
   console.log("Server: Received data:", data)
 
-  const supabase = getSupabaseServerClient()
+  const supabase = createClient()
 
   const { data: newTransaction, error } = await supabase.from("transacciones").insert([
     {
@@ -87,7 +61,7 @@ export async function updateTransaction(
   console.log("--- Server Action: updateTransaction called ---")
   console.log("Server: Received data:", data)
 
-  const supabase = getSupabaseServerClient()
+  const supabase = createClient()
 
   const { id, ...updateData } = data
 
@@ -118,7 +92,7 @@ export async function updateTransaction(
 }
 
 export async function deleteTransaction(id: string) {
-  const supabase = getSupabaseServerClient()
+  const supabase = createClient()
 
   const { error } = await supabase.from("transacciones").delete().eq("id", id)
 
@@ -132,5 +106,5 @@ export async function deleteTransaction(id: string) {
   revalidatePath("/net-profit")
   revalidatePath("/commissions")
   revalidatePath("/")
-  return { success: true, message: "Transacción eliminada exitosamente." }
+  return { success: true, message: "Transacción eliminada exitosamente" }
 }

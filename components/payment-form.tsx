@@ -1,16 +1,18 @@
 "use client"
 
 import type React from "react"
-import { useActionState, useState, useEffect, startTransition } from "react" // Importar startTransition
+
+import { useActionState, useState, useEffect, startTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { addPayment, updatePayment } from "@/actions/payment-projection-actions"
+import type { Tables } from "@/lib/database.types"
 
 interface PaymentFormProps {
   clienteId: string
-  initialData?: { fecha: string; monto: number; descripcion: string; index?: number } | null
+  initialData?: Tables<"clientes">["historial_pagos"][number] & { index?: number }
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -42,19 +44,16 @@ export function PaymentForm({ clienteId, initialData, onSuccess, onCancel }: Pay
     }
   }, [state, toast, onSuccess])
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const formData = new FormData(event.currentTarget)
     const data = {
-      clienteId: clienteId,
-      fecha: formData.get("fecha") as string,
-      monto: Number.parseFloat(formData.get("monto") as string),
-      descripcion: formData.get("descripcion") as string,
-      ...(isEditing && { index: initialData.index }),
+      clienteId,
+      fecha,
+      monto: Number.parseFloat(monto),
+      descripcion,
+      ...(isEditing && { index: initialData?.index }), // Añadir índice solo si estamos editando
     }
-    console.log("Client: Submitting data:", data)
     startTransition(() => {
-      // Envuelve la llamada a formAction en startTransition
       formAction(data)
     })
   }
@@ -66,7 +65,7 @@ export function PaymentForm({ clienteId, initialData, onSuccess, onCancel }: Pay
         <Input id="fecha" name="fecha" type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="monto">Monto (USD)</Label>
+        <Label htmlFor="monto">Monto</Label>
         <Input
           id="monto"
           name="monto"
@@ -83,7 +82,7 @@ export function PaymentForm({ clienteId, initialData, onSuccess, onCancel }: Pay
         <Input
           id="descripcion"
           name="descripcion"
-          required
+          placeholder="Descripción del pago"
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
         />

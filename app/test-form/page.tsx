@@ -1,18 +1,34 @@
 "use client"
 
 import type React from "react"
-import { useActionState, useState, useEffect } from "react"
+
+import { useActionState, useState, useEffect, startTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { addProjection } from "@/actions/payment-projection-actions" // Usamos una acción existente para la prueba
 
-export default function TestForm() {
-  const [state, formAction, isPending] = useActionState(addProjection, null)
+// Define a simple server action for testing
+async function testAction(prevState: any, data: { testInput: string }) {
+  "use server"
+  console.log("--- Server Action: testAction called ---")
+  console.log("Server: Received data:", data)
+
+  // Simulate a delay
+  await new Promise((resolve) => setTimeout(resolve, 500))
+
+  if (data.testInput === "error") {
+    return { success: false, message: "Simulated error: Input was 'error'." }
+  }
+
+  return { success: true, message: `Server received: ${data.testInput}` }
+}
+
+export default function TestFormPage() {
+  const [state, formAction, isPending] = useActionState(testAction, null)
   const { toast } = useToast()
-
-  const [testValue, setTestValue] = useState("")
+  const [testInput, setTestInput] = useState("")
 
   useEffect(() => {
     if (state?.success) {
@@ -30,43 +46,42 @@ export default function TestForm() {
     }
   }, [state, toast])
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const formData = new FormData(event.currentTarget)
-    const data = {
-      clienteId: "test-client-id-123", // ID de cliente de prueba
-      fecha: new Date().toISOString().split("T")[0],
-      monto: Number.parseFloat(testValue) || 0,
-      pagado: false,
-    }
-    console.log("Client: Submitting test data:", data)
-    formAction(data)
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault() // Prevent default form submission
+    console.log("Client: Submitting test data:", { testInput })
+    startTransition(() => {
+      formAction({ testInput }) // Pass the plain object to the server action
+    })
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-md">
-        <h2 className="mb-4 text-2xl font-bold">Formulario de Prueba de Server Action</h2>
-        <form onSubmit={handleSubmit} className="grid gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="testInput">Valor de Prueba</Label>
-            <Input
-              id="testInput"
-              name="testInput"
-              type="text"
-              placeholder="Introduce un valor"
-              value={testValue}
-              onChange={(e) => setTestValue(e.target.value)}
-            />
-          </div>
-          <Button type="submit" disabled={isPending}>
-            {isPending ? "Enviando..." : "Enviar Prueba"}
-          </Button>
-        </form>
-        {state && (
-          <div className={`mt-4 text-center ${state.success ? "text-green-600" : "text-red-600"}`}>{state.message}</div>
-        )}
-      </div>
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Formulario de Prueba de Server Action</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="grid gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="testInput">Entrada de Prueba</Label>
+              <Input
+                id="testInput"
+                name="testInput"
+                placeholder="Escribe algo aquí"
+                required
+                value={testInput}
+                onChange={(e) => setTestInput(e.target.value)}
+              />
+            </div>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Enviando..." : "Enviar Prueba"}
+            </Button>
+            {state && (
+              <p className={`mt-2 text-sm ${state.success ? "text-green-600" : "text-red-600"}`}>{state.message}</p>
+            )}
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

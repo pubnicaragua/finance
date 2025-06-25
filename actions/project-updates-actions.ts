@@ -1,19 +1,22 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { revalidatePath } from "next/cache"
 import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
 
 // --- Avances de Proyecto Actions ---
 
-export async function addAvance(formData: FormData) {
+export async function addAvance(prevState: any, data: Partial<TablesInsert<"avances_proyecto">>) {
+  console.log("--- Server Action: addAvance called ---")
+  console.log("Server: Received data:", data)
+
   const supabase = createClient()
   const newAvance: TablesInsert<"avances_proyecto"> = {
-    cliente_id: formData.get("cliente_id") as string,
-    fecha: formData.get("fecha") as string,
-    descripcion: formData.get("descripcion") as string,
-    porcentaje_avance: Number.parseFloat(formData.get("porcentaje_avance") as string),
-    comentarios_cliente: formData.get("comentarios_cliente") as string,
+    cliente_id: data.cliente_id as string,
+    fecha: data.fecha as string,
+    descripcion: data.descripcion as string,
+    porcentaje_avance: Number.parseFloat(data.porcentaje_avance as any),
+    comentarios_cliente: data.comentarios_cliente as string,
   }
 
   const { error } = await supabase.from("avances_proyecto").insert(newAvance)
@@ -27,15 +30,18 @@ export async function addAvance(formData: FormData) {
   return { success: true, message: "Avance añadido exitosamente." }
 }
 
-export async function updateAvance(formData: FormData) {
+export async function updateAvance(prevState: any, data: Partial<TablesUpdate<"avances_proyecto">> & { id: string }) {
+  console.log("--- Server Action: updateAvance called ---")
+  console.log("Server: Received data:", data)
+
   const supabase = createClient()
-  const id = formData.get("id") as string
-  const cliente_id = formData.get("cliente_id") as string
+  const id = data.id as string
+  const cliente_id = data.cliente_id as string // Necesario para revalidar la ruta
   const updatedAvance: TablesUpdate<"avances_proyecto"> = {
-    fecha: formData.get("fecha") as string,
-    descripcion: formData.get("descripcion") as string,
-    porcentaje_avance: Number.parseFloat(formData.get("porcentaje_avance") as string),
-    comentarios_cliente: formData.get("comentarios_cliente") as string,
+    fecha: data.fecha as string,
+    descripcion: data.descripcion as string,
+    porcentaje_avance: Number.parseFloat(data.porcentaje_avance as any),
+    comentarios_cliente: data.comentarios_cliente as string,
   }
 
   const { error } = await supabase.from("avances_proyecto").update(updatedAvance).eq("id", id)
@@ -64,14 +70,17 @@ export async function deleteAvance(id: string, cliente_id: string) {
 
 // --- Alcances de Desarrollo Actions ---
 
-export async function addAlcance(formData: FormData) {
+export async function addAlcance(prevState: any, data: Partial<TablesInsert<"alcances_desarrollo">>) {
+  console.log("--- Server Action: addAlcance called ---")
+  console.log("Server: Received data:", data)
+
   const supabase = createClient()
   const newAlcance: TablesInsert<"alcances_desarrollo"> = {
-    cliente_id: formData.get("cliente_id") as string,
-    nombre_modulo: formData.get("nombre_modulo") as string,
-    descripcion: formData.get("descripcion") as string,
-    fecha_implementacion: formData.get("fecha_implementacion") as string,
-    estado: formData.get("estado") as string,
+    cliente_id: data.cliente_id as string,
+    nombre_modulo: data.nombre_modulo as string,
+    descripcion: data.descripcion as string,
+    fecha_implementacion: data.fecha_implementacion as string,
+    estado: data.estado as string,
   }
 
   const { error } = await supabase.from("alcances_desarrollo").insert(newAlcance)
@@ -85,15 +94,21 @@ export async function addAlcance(formData: FormData) {
   return { success: true, message: "Alcance añadido exitosamente." }
 }
 
-export async function updateAlcance(formData: FormData) {
+export async function updateAlcance(
+  prevState: any,
+  data: Partial<TablesUpdate<"alcances_desarrollo">> & { id: string },
+) {
+  console.log("--- Server Action: updateAlcance called ---")
+  console.log("Server: Received data:", data)
+
   const supabase = createClient()
-  const id = formData.get("id") as string
-  const cliente_id = formData.get("cliente_id") as string
+  const id = data.id as string
+  const cliente_id = data.cliente_id as string // Necesario para revalidar la ruta
   const updatedAlcance: TablesUpdate<"alcances_desarrollo"> = {
-    nombre_modulo: formData.get("nombre_modulo") as string,
-    descripcion: formData.get("descripcion") as string,
-    fecha_implementacion: formData.get("fecha_implementacion") as string,
-    estado: formData.get("estado") as string,
+    nombre_modulo: data.nombre_modulo as string,
+    descripcion: data.descripcion as string,
+    fecha_implementacion: data.fecha_implementacion as string,
+    estado: data.estado as string,
   }
 
   const { error } = await supabase.from("alcances_desarrollo").update(updatedAlcance).eq("id", id)
