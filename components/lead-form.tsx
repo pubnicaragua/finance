@@ -1,15 +1,14 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useEffect } from "react"
 import { addLead, updateLead } from "@/actions/lead-actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 import { DialogFooter } from "@/components/ui/dialog"
-import { useEffect } from "react"
 import type { Tables } from "@/lib/database.types"
 
 interface LeadFormProps {
@@ -18,26 +17,16 @@ interface LeadFormProps {
 }
 
 export function LeadForm({ initialData, onSuccess }: LeadFormProps) {
-  // Cambiado a exportación nombrada
   const isEditing = !!initialData
   const action = isEditing ? updateLead : addLead
   const [state, formAction, isPending] = useActionState(action, null)
-  const { toast } = useToast()
 
   useEffect(() => {
     if (state?.success) {
-      toast({
-        title: "Éxito",
-        description: state.message,
-        variant: "default",
-      })
+      toast({ title: "Éxito", description: state.message })
       onSuccess?.()
     } else if (state?.success === false) {
-      toast({
-        title: "Error",
-        description: state.message,
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: state.message, variant: "destructive" })
     }
   }, [state, onSuccess])
 
@@ -48,7 +37,7 @@ export function LeadForm({ initialData, onSuccess }: LeadFormProps) {
         <Label htmlFor="cliente" className="text-right">
           Cliente
         </Label>
-        <Input id="cliente" name="cliente" defaultValue={initialData?.cliente || ""} className="col-span-3" required />
+        <Input id="cliente" name="cliente" defaultValue={initialData?.cliente ?? ""} className="col-span-3" required />
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="proyecto" className="text-right">
@@ -57,7 +46,7 @@ export function LeadForm({ initialData, onSuccess }: LeadFormProps) {
         <Input
           id="proyecto"
           name="proyecto"
-          defaultValue={initialData?.proyecto || ""}
+          defaultValue={initialData?.proyecto ?? ""}
           className="col-span-3"
           required
         />
@@ -69,7 +58,7 @@ export function LeadForm({ initialData, onSuccess }: LeadFormProps) {
         <Input
           id="tipo_software"
           name="tipo_software"
-          defaultValue={initialData?.tipo_software || ""}
+          defaultValue={initialData?.tipo_software ?? ""}
           className="col-span-3"
         />
       </div>
@@ -77,7 +66,7 @@ export function LeadForm({ initialData, onSuccess }: LeadFormProps) {
         <Label htmlFor="pais" className="text-right">
           País
         </Label>
-        <Input id="pais" name="pais" defaultValue={initialData?.pais || ""} className="col-span-3" />
+        <Input id="pais" name="pais" defaultValue={initialData?.pais ?? ""} className="col-span-3" />
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="proyeccion_usd" className="text-right">
@@ -88,7 +77,7 @@ export function LeadForm({ initialData, onSuccess }: LeadFormProps) {
           name="proyeccion_usd"
           type="number"
           step="0.01"
-          defaultValue={initialData?.proyeccion_usd || 0}
+          defaultValue={initialData?.proyeccion_usd ?? 0}
           className="col-span-3"
           required
         />
@@ -97,9 +86,9 @@ export function LeadForm({ initialData, onSuccess }: LeadFormProps) {
         <Label htmlFor="estado" className="text-right">
           Estado
         </Label>
-        <Select name="estado" defaultValue={initialData?.estado || "Nuevo"}>
+        <Select name="estado" defaultValue={initialData?.estado ?? "Nuevo"}>
           <SelectTrigger className="col-span-3">
-            <SelectValue placeholder="Selecciona un estado" />
+            <SelectValue placeholder="Selecciona estado" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="Nuevo">Nuevo</SelectItem>
@@ -118,7 +107,7 @@ export function LeadForm({ initialData, onSuccess }: LeadFormProps) {
         <Input
           id="canal_contacto"
           name="canal_contacto"
-          defaultValue={initialData?.canal_contacto || ""}
+          defaultValue={initialData?.canal_contacto ?? ""}
           className="col-span-3"
         />
       </div>
@@ -130,7 +119,7 @@ export function LeadForm({ initialData, onSuccess }: LeadFormProps) {
           id="fecha_ultimo_contacto"
           name="fecha_ultimo_contacto"
           type="date"
-          defaultValue={initialData?.fecha_ultimo_contacto || new Date().toISOString().split("T")[0]}
+          defaultValue={initialData?.fecha_ultimo_contacto ?? new Date().toISOString().split("T")[0]}
           className="col-span-3"
         />
       </div>
@@ -141,9 +130,9 @@ export function LeadForm({ initialData, onSuccess }: LeadFormProps) {
         <Textarea
           id="seguimiento"
           name="seguimiento"
-          defaultValue={JSON.stringify(initialData?.seguimiento || [], null, 2)}
+          defaultValue={JSON.stringify(initialData?.seguimiento ?? [], null, 2)}
           className="col-span-3"
-          rows={5}
+          rows={4}
         />
       </div>
       <DialogFooter>
@@ -155,5 +144,4 @@ export function LeadForm({ initialData, onSuccess }: LeadFormProps) {
   )
 }
 
-// Mantiene la exportación nombrada y agrega la default
-export { LeadForm as default }
+export default LeadForm

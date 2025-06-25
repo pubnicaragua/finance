@@ -14,7 +14,6 @@ interface PasivoCorrienteFormProps {
   onSuccess?: () => void
 }
 
-// Exportación nombrada para compatibilidad con módulos existentes
 export function PasivoCorrienteForm({ initialData, onSuccess }: PasivoCorrienteFormProps) {
   const isEditing = !!initialData
   const action = isEditing ? updatePasivoCorriente : addPasivoCorriente
@@ -22,18 +21,10 @@ export function PasivoCorrienteForm({ initialData, onSuccess }: PasivoCorrienteF
 
   useEffect(() => {
     if (state?.success) {
-      toast({
-        title: "Éxito",
-        description: state.message,
-        variant: "default",
-      })
+      toast({ title: "Éxito", description: state.message })
       onSuccess?.()
     } else if (state?.success === false) {
-      toast({
-        title: "Error",
-        description: state.message,
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: state.message, variant: "destructive" })
     }
   }, [state, onSuccess])
 
@@ -47,7 +38,7 @@ export function PasivoCorrienteForm({ initialData, onSuccess }: PasivoCorrienteF
         <Input
           id="descripcion"
           name="descripcion"
-          defaultValue={initialData?.descripcion || ""}
+          defaultValue={initialData?.descripcion ?? ""}
           className="col-span-3"
           required
         />
@@ -61,7 +52,7 @@ export function PasivoCorrienteForm({ initialData, onSuccess }: PasivoCorrienteF
           name="saldo"
           type="number"
           step="0.01"
-          defaultValue={initialData?.saldo || 0}
+          defaultValue={initialData?.saldo ?? 0}
           className="col-span-3"
           required
         />
@@ -74,7 +65,7 @@ export function PasivoCorrienteForm({ initialData, onSuccess }: PasivoCorrienteF
           id="fecha_vencimiento"
           name="fecha_vencimiento"
           type="date"
-          defaultValue={initialData?.fecha_vencimiento || new Date().toISOString().split("T")[0]}
+          defaultValue={initialData?.fecha_vencimiento ?? new Date().toISOString().split("T")[0]}
           className="col-span-3"
         />
       </div>
@@ -87,5 +78,7 @@ export function PasivoCorrienteForm({ initialData, onSuccess }: PasivoCorrienteF
   )
 }
 
-// Exportación por defecto para compatibilidad con importaciones existentes
 export default PasivoCorrienteForm
+
+// Alias exigido por Vercel
+export { PasivoCorrienteForm as CurrentLiabilityForm }

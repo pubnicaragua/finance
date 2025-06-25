@@ -14,7 +14,6 @@ interface ActivoNoCorrienteFormProps {
   onSuccess?: () => void
 }
 
-// Exportación nombrada para compatibilidad con módulos existentes
 export function ActivoNoCorrienteForm({ initialData, onSuccess }: ActivoNoCorrienteFormProps) {
   const isEditing = !!initialData
   const action = isEditing ? updateActivoNoCorriente : addActivoNoCorriente
@@ -22,18 +21,10 @@ export function ActivoNoCorrienteForm({ initialData, onSuccess }: ActivoNoCorrie
 
   useEffect(() => {
     if (state?.success) {
-      toast({
-        title: "Éxito",
-        description: state.message,
-        variant: "default",
-      })
+      toast({ title: "Éxito", description: state.message })
       onSuccess?.()
     } else if (state?.success === false) {
-      toast({
-        title: "Error",
-        description: state.message,
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: state.message, variant: "destructive" })
     }
   }, [state, onSuccess])
 
@@ -47,7 +38,7 @@ export function ActivoNoCorrienteForm({ initialData, onSuccess }: ActivoNoCorrie
         <Input
           id="descripcion"
           name="descripcion"
-          defaultValue={initialData?.descripcion || ""}
+          defaultValue={initialData?.descripcion ?? ""}
           className="col-span-3"
           required
         />
@@ -61,7 +52,7 @@ export function ActivoNoCorrienteForm({ initialData, onSuccess }: ActivoNoCorrie
           name="valor"
           type="number"
           step="0.01"
-          defaultValue={initialData?.valor || 0}
+          defaultValue={initialData?.valor ?? 0}
           className="col-span-3"
           required
         />
@@ -75,7 +66,7 @@ export function ActivoNoCorrienteForm({ initialData, onSuccess }: ActivoNoCorrie
           name="depreciacion"
           type="number"
           step="0.01"
-          defaultValue={initialData?.depreciacion || 0}
+          defaultValue={initialData?.depreciacion ?? 0}
           className="col-span-3"
         />
       </div>
@@ -88,7 +79,7 @@ export function ActivoNoCorrienteForm({ initialData, onSuccess }: ActivoNoCorrie
           name="valor_neto"
           type="number"
           step="0.01"
-          defaultValue={initialData?.valor_neto || 0}
+          defaultValue={initialData?.valor_neto ?? 0}
           className="col-span-3"
         />
       </div>
@@ -101,5 +92,4 @@ export function ActivoNoCorrienteForm({ initialData, onSuccess }: ActivoNoCorrie
   )
 }
 
-// Exportación por defecto para compatibilidad con importaciones existentes
 export default ActivoNoCorrienteForm
