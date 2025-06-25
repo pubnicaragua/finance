@@ -1,63 +1,35 @@
 "use server"
 
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
-import { revalidatePath } from "next/cache"
+import { createClient } from "@/lib/supabase/server" // Importar el cliente de servidor
+import { revalidatePath } from "next/cache" // Para revalidar la caché y actualizar el frontend
+import type { Tables } from "@/lib/database.types"
 
-function getSupabaseServerClient() {
-  const cookieStore = cookies()
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
-      },
-      set(name: string, value: string, options: any) {
-        try {
-          cookieStore.set({ name, value, ...options })
-        } catch (error) {
-          console.warn("Could not set cookie from server:", error)
-        }
-      },
-      remove(name: string, options: any) {
-        try {
-          cookieStore.set({ name, value: "", ...options })
-        } catch (error) {
-          console.warn("Could not remove cookie from server:", error)
-        }
-      },
-    },
-  })
-}
-
-export async function createLead(
-  prevState: any,
-  data: { nombre: string; email: string; telefono: string; estado: string },
-) {
-  console.log("--- Server Action: createLead called ---")
+export async function addLead(prevState: any, data: Partial<Tables<"leads">>) {
+  console.log("--- Server Action: addLead called ---")
   console.log("Server: Received data:", data)
 
-  const supabase = getSupabaseServerClient()
-  const { data: newLead, error } = await supabase.from("leads").insert([data])
+  const supabase = createClient()
+  const { data: newLead, error } = await supabase
+    .from("leads")
+    .insert([data as Tables<"leads">])
+    .select()
 
   if (error) {
     console.error("Error creating lead:", error)
-    return { success: false, message: `Error al crear lead: ${error.message}` }
+    return { success: false, message: `Error al añadir lead: ${error.message}` }
   }
 
-  revalidatePath("/leads")
-  return { success: true, message: "Lead creado exitosamente." }
+  revalidatePath("/leads") // Revalidar la página de leads
+  return { success: true, message: "Lead añadido exitosamente.", data: newLead[0] }
 }
 
-export async function updateLead(
-  prevState: any,
-  data: { id: string; nombre: string; email: string; telefono: string; estado: string },
-) {
+export async function updateLead(prevState: any, data: Partial<Tables<"leads">> & { id: string }) {
   console.log("--- Server Action: updateLead called ---")
   console.log("Server: Received data:", data)
 
-  const supabase = getSupabaseServerClient()
   const { id, ...updateData } = data
-  const { data: updatedLead, error } = await supabase.from("leads").update(updateData).eq("id", id)
+  const supabase = createClient()
+  const { data: updatedLead, error } = await supabase.from("leads").update(updateData).eq("id", id).select()
 
   if (error) {
     console.error("Error updating lead:", error)
@@ -65,11 +37,11 @@ export async function updateLead(
   }
 
   revalidatePath("/leads")
-  return { success: true, message: "Lead actualizado exitosamente." }
+  return { success: true, message: "Lead actualizado exitosamente.", data: updatedLead[0] }
 }
 
 export async function deleteLead(id: string) {
-  const supabase = getSupabaseServerClient()
+  const supabase = createClient()
   const { error } = await supabase.from("leads").delete().eq("id", id)
 
   if (error) {

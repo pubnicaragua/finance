@@ -1,31 +1,31 @@
 "use client"
 
 import type React from "react"
-import { useActionState, useState, useEffect } from "react"
+import { useActionState, useState, useEffect, startTransition } from "react" // Importar startTransition
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { createPartnership, updatePartnership } from "@/actions/partnership-actions"
+import { addPartnership, updatePartnership } from "@/actions/partnership-actions"
 import type { Tables } from "@/lib/database.types"
 
 interface PartnershipFormProps {
-  initialData?: Tables<"asociaciones"> | null
+  initialData?: Tables<"partnerships"> | null
   onSuccess?: () => void
   onCancel?: () => void
 }
 
 export function PartnershipForm({ initialData, onSuccess, onCancel }: PartnershipFormProps) {
   const isEditing = !!initialData
-  const action = isEditing ? updatePartnership : createPartnership
+  const action = isEditing ? updatePartnership : addPartnership
   const [state, formAction, isPending] = useActionState(action, null)
   const { toast } = useToast()
 
   const [nombre, setNombre] = useState(initialData?.nombre || "")
-  const [tipo, setTipo] = useState(initialData?.tipo || "Proveedor")
-  const [fechaInicio, setFechaInicio] = useState(initialData?.fecha_inicio || new Date().toISOString().split("T")[0])
-  const [estado, setEstado] = useState(initialData?.estado || "Activo")
+  const [contacto, setContacto] = useState(initialData?.contacto || "")
+  const [tipo, setTipo] = useState(initialData?.tipo || "")
+  const [descripcion, setDescripcion] = useState(initialData?.descripcion || "")
 
   useEffect(() => {
     if (state?.success) {
@@ -50,12 +50,15 @@ export function PartnershipForm({ initialData, onSuccess, onCancel }: Partnershi
     const data = {
       ...(isEditing && { id: initialData.id }),
       nombre: formData.get("nombre") as string,
+      contacto: formData.get("contacto") as string,
       tipo: formData.get("tipo") as string,
-      fecha_inicio: formData.get("fecha_inicio") as string,
-      estado: formData.get("estado") as string,
+      descripcion: formData.get("descripcion") as string,
     }
-    console.log("Client: Submitting data:", data)
-    formAction(data)
+    console.log("Client: Submitting partnership data:", data)
+    startTransition(() => {
+      // Envuelve la llamada a formAction en startTransition
+      formAction(data)
+    })
   }
 
   return (
@@ -65,41 +68,21 @@ export function PartnershipForm({ initialData, onSuccess, onCancel }: Partnershi
         <Input id="nombre" name="nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} />
       </div>
       <div className="space-y-2">
+        <Label htmlFor="contacto">Contacto</Label>
+        <Input id="contacto" name="contacto" required value={contacto} onChange={(e) => setContacto(e.target.value)} />
+      </div>
+      <div className="space-y-2">
         <Label htmlFor="tipo">Tipo</Label>
-        <Select name="tipo" value={tipo} onValueChange={setTipo}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecciona tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Proveedor">Proveedor</SelectItem>
-            <SelectItem value="Cliente">Cliente</SelectItem>
-            <SelectItem value="Socio">Socio</SelectItem>
-          </SelectContent>
-        </Select>
+        <Input id="tipo" name="tipo" required value={tipo} onChange={(e) => setTipo(e.target.value)} />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="fecha_inicio">Fecha de Inicio</Label>
-        <Input
-          id="fecha_inicio"
-          name="fecha_inicio"
-          type="date"
-          required
-          value={fechaInicio}
-          onChange={(e) => setFechaInicio(e.target.value)}
+        <Label htmlFor="descripcion">Descripción</Label>
+        <Textarea
+          id="descripcion"
+          name="descripcion"
+          value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
         />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="estado">Estado</Label>
-        <Select name="estado" value={estado} onValueChange={setEstado}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecciona estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Activo">Activo</SelectItem>
-            <SelectItem value="Inactivo">Inactivo</SelectItem>
-            <SelectItem value="Pendiente">Pendiente</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
@@ -111,8 +94,8 @@ export function PartnershipForm({ initialData, onSuccess, onCancel }: Partnershi
               ? "Actualizando..."
               : "Añadiendo..."
             : isEditing
-              ? "Actualizar Asociación"
-              : "Añadir Asociación"}
+              ? "Actualizar Partnership"
+              : "Añadir Partnership"}
         </Button>
       </div>
     </form>

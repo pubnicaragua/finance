@@ -1,10 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useActionState, useState, useEffect } from "react"
+import { useActionState, useState, useEffect, startTransition } from "react" // Importar startTransition
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { addActivoNoCorriente, updateActivoNoCorriente } from "@/actions/asset-liability-actions"
 import type { Tables } from "@/lib/database.types"
@@ -23,10 +24,10 @@ export function ActivoNoCorrienteForm({ initialData, onSuccess, onCancel }: Acti
 
   const [nombre, setNombre] = useState(initialData?.nombre || "")
   const [monto, setMonto] = useState(initialData?.monto?.toString() || "")
-  const [fechaAdquisicion, setFechaAdquisicion] = useState(
-    initialData?.fecha_adquisicion || new Date().toISOString().split("T")[0],
-  )
+  const [fechaAdquisicion, setFechaAdquisicion] = useState(initialData?.fecha_adquisicion || "")
   const [vidaUtilAnios, setVidaUtilAnios] = useState(initialData?.vida_util_anios?.toString() || "")
+  const [valorResidual, setValorResidual] = useState(initialData?.valor_residual?.toString() || "")
+  const [descripcion, setDescripcion] = useState(initialData?.descripcion || "")
 
   useEffect(() => {
     if (state?.success) {
@@ -54,9 +55,14 @@ export function ActivoNoCorrienteForm({ initialData, onSuccess, onCancel }: Acti
       monto: Number.parseFloat(formData.get("monto") as string),
       fecha_adquisicion: formData.get("fecha_adquisicion") as string,
       vida_util_anios: Number.parseInt(formData.get("vida_util_anios") as string),
+      valor_residual: Number.parseFloat(formData.get("valor_residual") as string),
+      descripcion: formData.get("descripcion") as string,
     }
-    console.log("Client: Submitting data:", data)
-    formAction(data)
+    console.log("Client: Submitting activo no corriente data:", data)
+    startTransition(() => {
+      // Envuelve la llamada a formAction en startTransition
+      formAction(data)
+    })
   }
 
   return (
@@ -95,10 +101,30 @@ export function ActivoNoCorrienteForm({ initialData, onSuccess, onCancel }: Acti
           id="vida_util_anios"
           name="vida_util_anios"
           type="number"
-          step="1"
           required
           value={vidaUtilAnios}
           onChange={(e) => setVidaUtilAnios(e.target.value)}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="valor_residual">Valor Residual (USD)</Label>
+        <Input
+          id="valor_residual"
+          name="valor_residual"
+          type="number"
+          step="0.01"
+          placeholder="0.00"
+          value={valorResidual}
+          onChange={(e) => setValorResidual(e.target.value)}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="descripcion">Descripción</Label>
+        <Textarea
+          id="descripcion"
+          name="descripcion"
+          value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
         />
       </div>
       <div className="flex justify-end gap-2">
@@ -118,3 +144,5 @@ export function ActivoNoCorrienteForm({ initialData, onSuccess, onCancel }: Acti
     </form>
   )
 }
+
+export default ActivoNoCorrienteForm

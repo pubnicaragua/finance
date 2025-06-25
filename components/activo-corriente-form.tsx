@@ -1,10 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useActionState, useState, useEffect } from "react"
+import { useActionState, useState, useEffect, startTransition } from "react" // Importar startTransition
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { addActivoCorriente, updateActivoCorriente } from "@/actions/asset-liability-actions"
 import type { Tables } from "@/lib/database.types"
@@ -23,9 +24,8 @@ export function ActivoCorrienteForm({ initialData, onSuccess, onCancel }: Activo
 
   const [nombre, setNombre] = useState(initialData?.nombre || "")
   const [monto, setMonto] = useState(initialData?.monto?.toString() || "")
-  const [fechaAdquisicion, setFechaAdquisicion] = useState(
-    initialData?.fecha_adquisicion || new Date().toISOString().split("T")[0],
-  )
+  const [fechaAdquisicion, setFechaAdquisicion] = useState(initialData?.fecha_adquisicion || "")
+  const [descripcion, setDescripcion] = useState(initialData?.descripcion || "")
 
   useEffect(() => {
     if (state?.success) {
@@ -52,9 +52,13 @@ export function ActivoCorrienteForm({ initialData, onSuccess, onCancel }: Activo
       nombre: formData.get("nombre") as string,
       monto: Number.parseFloat(formData.get("monto") as string),
       fecha_adquisicion: formData.get("fecha_adquisicion") as string,
+      descripcion: formData.get("descripcion") as string,
     }
-    console.log("Client: Submitting data:", data)
-    formAction(data)
+    console.log("Client: Submitting activo corriente data:", data)
+    startTransition(() => {
+      // Envuelve la llamada a formAction en startTransition
+      formAction(data)
+    })
   }
 
   return (
@@ -85,6 +89,15 @@ export function ActivoCorrienteForm({ initialData, onSuccess, onCancel }: Activo
           required
           value={fechaAdquisicion}
           onChange={(e) => setFechaAdquisicion(e.target.value)}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="descripcion">Descripción</Label>
+        <Textarea
+          id="descripcion"
+          name="descripcion"
+          value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
         />
       </div>
       <div className="flex justify-end gap-2">

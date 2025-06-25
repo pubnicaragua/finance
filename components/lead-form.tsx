@@ -1,13 +1,13 @@
 "use client"
 
 import type React from "react"
-import { useActionState, useState, useEffect } from "react"
+import { useActionState, useState, useEffect, startTransition } from "react" // Importar startTransition
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { createLead, updateLead } from "@/actions/lead-actions"
+import { addLead, updateLead } from "@/actions/lead-actions"
 import type { Tables } from "@/lib/database.types"
 
 interface LeadFormProps {
@@ -18,14 +18,14 @@ interface LeadFormProps {
 
 export function LeadForm({ initialData, onSuccess, onCancel }: LeadFormProps) {
   const isEditing = !!initialData
-  const action = isEditing ? updateLead : createLead
+  const action = isEditing ? updateLead : addLead
   const [state, formAction, isPending] = useActionState(action, null)
   const { toast } = useToast()
 
   const [nombre, setNombre] = useState(initialData?.nombre || "")
   const [email, setEmail] = useState(initialData?.email || "")
   const [telefono, setTelefono] = useState(initialData?.telefono || "")
-  const [estado, setEstado] = useState(initialData?.estado || "Nuevo")
+  const [interes, setInteres] = useState(initialData?.interes || "")
 
   useEffect(() => {
     if (state?.success) {
@@ -52,10 +52,13 @@ export function LeadForm({ initialData, onSuccess, onCancel }: LeadFormProps) {
       nombre: formData.get("nombre") as string,
       email: formData.get("email") as string,
       telefono: formData.get("telefono") as string,
-      estado: formData.get("estado") as string,
+      interes: formData.get("interes") as string,
     }
-    console.log("Client: Submitting data:", data)
-    formAction(data)
+    console.log("Client: Submitting lead data:", data)
+    startTransition(() => {
+      // Envuelve la llamada a formAction en startTransition
+      formAction(data)
+    })
   }
 
   return (
@@ -66,26 +69,15 @@ export function LeadForm({ initialData, onSuccess, onCancel }: LeadFormProps) {
       </div>
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input id="email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="telefono">Teléfono</Label>
-        <Input id="telefono" name="telefono" required value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+        <Input id="telefono" name="telefono" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="estado">Estado</Label>
-        <Select name="estado" value={estado} onValueChange={setEstado}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecciona estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Nuevo">Nuevo</SelectItem>
-            <SelectItem value="Contactado">Contactado</SelectItem>
-            <SelectItem value="Calificado">Calificado</SelectItem>
-            <SelectItem value="Convertido">Convertido</SelectItem>
-            <SelectItem value="Perdido">Perdido</SelectItem>
-          </SelectContent>
-        </Select>
+        <Label htmlFor="interes">Interés</Label>
+        <Textarea id="interes" name="interes" value={interes} onChange={(e) => setInteres(e.target.value)} />
       </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
