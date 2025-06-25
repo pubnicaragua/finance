@@ -1,21 +1,21 @@
 "use client"
 
 import { useState } from "react"
-import { PlusIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { LeadForm } from "@/components/lead-form"
+import { PlusIcon } from "lucide-react"
 
 interface AddLeadDialogProps {
-  onLeadAdded: () => void // Callback para cuando se añade un lead con éxito
+  onLeadAdded: () => void
 }
 
 export function AddLeadDialog({ onLeadAdded }: AddLeadDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   const handleSuccess = () => {
-    setIsOpen(false) // Cerrar el diálogo
-    onLeadAdded() // Notificar al padre que un lead fue añadido
+    setIsOpen(false)
+    onLeadAdded() // Llama a la Server Action para revalidar
   }
 
   return (

@@ -1,59 +1,39 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { revalidatePath } from "next/cache"
 import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
 
-export async function addTransaction(
-  prevState: any,
-  data: Partial<TablesInsert<"transacciones"> & { categoria: string }>,
-) {
-  console.log("--- Server Action: addTransaction called ---")
-  console.log("Server: Received data:", data)
-
-  const {
-    concepto,
-    fecha,
-    monto,
-    tipo,
-    descripcion,
-    categoria,
-    aplicar_comision,
-    vendedor_comision,
-    comision_aplicada,
-  } = data
-
-  // Validaciones básicas para campos NOT NULL
-  if (!concepto) {
-    console.error("Error: concepto es nulo o inválido para addTransaction.")
-    return { success: false, message: "Error al añadir transacción: El concepto es requerido." }
-  }
-  if (!fecha) {
-    console.error("Error: fecha es nulo o inválido para addTransaction.")
-    return { success: false, message: "Error al añadir transacción: La fecha es requerida." }
-  }
-  if (monto === undefined || monto === null) {
-    console.error("Error: monto es nulo o inválido para addTransaction.")
-    return { success: false, message: "Error al añadir transacción: El monto es requerido." }
-  }
-  if (!tipo) {
-    console.error("Error: tipo es nulo o inválido para addTransaction.")
-    return { success: false, message: "Error al añadir transacción: El tipo de transacción es requerido." }
-  }
-
+export async function addTransaction(prevState: any, formData: FormData) {
   const supabase = createClient()
+  const data = Object.fromEntries(formData.entries()) as Partial<TablesInsert<"transacciones">>
+
+  const { fecha, tipo, categoria, descripcion, monto, cuenta_origen_id, cuenta_destino_id, cliente_id, proyecto_id } =
+    data
+
+  if (!fecha || typeof fecha !== "string" || fecha.trim() === "") {
+    return { success: false, message: "La fecha es requerida." }
+  }
+  if (!tipo || typeof tipo !== "string" || tipo.trim() === "") {
+    return { success: false, message: "El tipo es requerido." }
+  }
+  if (!categoria || typeof categoria !== "string" || categoria.trim() === "") {
+    return { success: false, message: "La categoría es requerida." }
+  }
+  if (monto === undefined || monto === null || isNaN(Number(monto))) {
+    return { success: false, message: "El monto es requerido y debe ser un número." }
+  }
+
   const newTransaction: TablesInsert<"transacciones"> = {
-    concepto: concepto as string,
-    fecha: fecha as string,
-    monto: Number.parseFloat(monto as any),
-    tipo: tipo as string,
-    detalle: descripcion, // Mapear descripcion a detalle
-    tipo_ingreso: tipo === "ingreso" ? categoria : null, // Usar categoria como tipo_ingreso/egreso
-    tipo_egreso: tipo === "egreso" ? categoria : null,
-    aplicar_comision: aplicar_comision || false,
-    vendedor_comision: aplicar_comision ? (vendedor_comision as string) : null,
-    comision_aplicada: aplicar_comision ? Number.parseFloat(comision_aplicada as any) : null,
-    // cliente_id y cuenta_id se pueden añadir si son relevantes para transacciones generales
+    fecha: fecha,
+    tipo: tipo,
+    categoria: categoria,
+    descripcion: descripcion || null,
+    monto: Number(monto),
+    cuenta_origen_id: cuenta_origen_id || null,
+    cuenta_destino_id: cuenta_destino_id || null,
+    cliente_id: cliente_id || null,
+    proyecto_id: proyecto_id || null,
   }
 
   const { error } = await supabase.from("transacciones").insert(newTransaction)
@@ -64,68 +44,52 @@ export async function addTransaction(
   }
 
   revalidatePath("/transactions")
-  revalidatePath("/account-summary")
-  revalidatePath("/net-profit")
-  revalidatePath("/commissions")
-  revalidatePath("/") // Revalidar el dashboard general
   return { success: true, message: "Transacción añadida exitosamente." }
 }
 
-export async function updateTransaction(
-  prevState: any,
-  data: Partial<TablesUpdate<"transacciones">> & { id: string; categoria: string },
-) {
-  console.log("--- Server Action: updateTransaction called ---")
-  console.log("Server: Received data:", data)
+export async function updateTransaction(prevState: any, formData: FormData) {
+  const supabase = createClient()
+  const data = Object.fromEntries(formData.entries()) as Partial<TablesUpdate<"transacciones">> & { id: string }
 
   const {
     id,
-    concepto,
     fecha,
-    monto,
     tipo,
-    descripcion,
     categoria,
-    aplicar_comision,
-    vendedor_comision,
-    comision_aplicada,
+    descripcion,
+    monto,
+    cuenta_origen_id,
+    cuenta_destino_id,
+    cliente_id,
+    proyecto_id,
   } = data
 
-  // Validaciones básicas para campos NOT NULL
-  if (!id) {
-    console.error("Error: ID es nulo o inválido para updateTransaction.")
-    return { success: false, message: "Error al actualizar transacción: El ID es requerido." }
+  if (!id || typeof id !== "string" || id.trim() === "") {
+    return { success: false, message: "El ID de la transacción es requerido." }
   }
-  if (!concepto) {
-    console.error("Error: concepto es nulo o inválido para updateTransaction.")
-    return { success: false, message: "Error al actualizar transacción: El concepto es requerido." }
+  if (!fecha || typeof fecha !== "string" || fecha.trim() === "") {
+    return { success: false, message: "La fecha es requerida." }
   }
-  if (!fecha) {
-    console.error("Error: fecha es nulo o inválido para updateTransaction.")
-    return { success: false, message: "Error al actualizar transacción: La fecha es requerida." }
+  if (!tipo || typeof tipo !== "string" || tipo.trim() === "") {
+    return { success: false, message: "El tipo es requerido." }
   }
-  if (monto === undefined || monto === null) {
-    console.error("Error: monto es nulo o inválido para updateTransaction.")
-    return { success: false, message: "Error al actualizar transacción: El monto es requerido." }
+  if (!categoria || typeof categoria !== "string" || categoria.trim() === "") {
+    return { success: false, message: "La categoría es requerida." }
   }
-  if (!tipo) {
-    console.error("Error: tipo es nulo o inválido para updateTransaction.")
-    return { success: false, message: "Error al actualizar transacción: El tipo de transacción es requerido." }
+  if (monto === undefined || monto === null || isNaN(Number(monto))) {
+    return { success: false, message: "El monto es requerido y debe ser un número." }
   }
 
-  const supabase = createClient()
   const updatedTransaction: TablesUpdate<"transacciones"> = {
-    concepto: concepto as string,
-    fecha: fecha as string,
-    monto: Number.parseFloat(monto as any),
-    tipo: tipo as string,
-    detalle: descripcion, // Mapear descripcion a detalle
-    tipo_ingreso: tipo === "ingreso" ? categoria : null, // Usar categoria como tipo_ingreso/egreso
-    tipo_egreso: tipo === "egreso" ? categoria : null,
-    aplicar_comision: aplicar_comision || false,
-    vendedor_comision: aplicar_comision ? (vendedor_comision as string) : null,
-    comision_aplicada: aplicar_comision ? Number.parseFloat(comision_aplicada as any) : null,
-    // cliente_id y cuenta_id se pueden añadir si son relevantes para transacciones generales
+    fecha: fecha,
+    tipo: tipo,
+    categoria: categoria,
+    descripcion: descripcion || null,
+    monto: Number(monto),
+    cuenta_origen_id: cuenta_origen_id || null,
+    cuenta_destino_id: cuenta_destino_id || null,
+    cliente_id: cliente_id || null,
+    proyecto_id: proyecto_id || null,
   }
 
   const { error } = await supabase.from("transacciones").update(updatedTransaction).eq("id", id)
@@ -136,10 +100,6 @@ export async function updateTransaction(
   }
 
   revalidatePath("/transactions")
-  revalidatePath("/account-summary")
-  revalidatePath("/net-profit")
-  revalidatePath("/commissions")
-  revalidatePath("/")
   return { success: true, message: "Transacción actualizada exitosamente." }
 }
 
@@ -153,9 +113,15 @@ export async function deleteTransaction(id: string) {
   }
 
   revalidatePath("/transactions")
-  revalidatePath("/account-summary")
-  revalidatePath("/net-profit")
-  revalidatePath("/commissions")
-  revalidatePath("/")
   return { success: true, message: "Transacción eliminada exitosamente." }
+}
+
+export async function getTransactions() {
+  const supabase = createClient()
+  const { data, error } = await supabase.from("transacciones").select("*").order("fecha", { ascending: false })
+  if (error) {
+    console.error("Error fetching transactions:", error)
+    return [] // Devolver array vacío en caso de error
+  }
+  return data || [] // Asegurar que siempre sea un array
 }

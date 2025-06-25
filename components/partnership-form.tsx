@@ -1,62 +1,94 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { addPartnership, updatePartnership } from "@/actions/partnership-actions"
-import { toast } from "@/hooks/use-toast"
-import type { Tables } from "@/lib/database.types"
+import { useToast } from "@/hooks/use-toast"
+import type { TablesUpdate } from "@/lib/database.types"
 
 interface PartnershipFormProps {
-  initialData?: Tables<"partnerships">
-  onSuccess?: () => void
-  onCancel?: () => void
+  initialData?: TablesUpdate<"partnerships"> | null
+  onSuccess: () => void
+  onCancel: () => void
 }
 
 export function PartnershipForm({ initialData, onSuccess, onCancel }: PartnershipFormProps) {
-  const isEditing = !!initialData
-  const action = isEditing ? updatePartnership : addPartnership
+  const { toast } = useToast()
+  const formRef = useRef<HTMLFormElement>(null)
 
-  const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
-    const result = await action(formData)
-    if (result.success) {
+  const actionToUse = initialData ? updatePartnership : addPartnership
+
+  const [state, formAction, isPending] = useActionState(actionToUse, {
+    success: false,
+    message: "",
+  })
+
+  useEffect(() => {
+    if (state.message) {
       toast({
-        title: "Éxito",
-        description: result.message,
+        title: state.success ? "Éxito" : "Error",
+        description: state.message,
+        variant: state.success ? "default" : "destructive",
       })
-      onSuccess?.() // Llamar al callback de éxito
-    } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      })
+      if (state.success) {
+        onSuccess()
+        formRef.current?.reset()
+      }
     }
-    return result
-  }, null)
+  }, [state, toast, onSuccess])
 
   return (
-    <form action={formAction} className="grid gap-4 py-4">
-      {isEditing && <input type="hidden" name="id" value={initialData.id} />}
+    <form ref={formRef} action={formAction} className="grid gap-4 py-4">
+      {initialData && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="nombre" className="text-right">
-          Nombre Partnership
-        </Label>
-        <Input id="nombre" name="nombre" defaultValue={initialData?.nombre || ""} className="col-span-3" required />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="tipo_colaboracion" className="text-right">
-          Tipo Colaboración
+        <Label htmlFor="nombre_socio" className="text-right">
+          Nombre del Socio
         </Label>
         <Input
-          id="tipo_colaboracion"
-          name="tipo_colaboracion"
-          defaultValue={initialData?.tipo_colaboracion || ""}
+          id="nombre_socio"
+          name="nombre_socio"
+          defaultValue={initialData?.nombre_socio || ""}
           className="col-span-3"
           required
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="tipo_acuerdo" className="text-right">
+          Tipo de Acuerdo
+        </Label>
+        <Input
+          id="tipo_acuerdo"
+          name="tipo_acuerdo"
+          defaultValue={initialData?.tipo_acuerdo || ""}
+          className="col-span-3"
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="fecha_inicio" className="text-right">
+          Fecha de Inicio
+        </Label>
+        <Input
+          id="fecha_inicio"
+          name="fecha_inicio"
+          type="date"
+          defaultValue={initialData?.fecha_inicio || ""}
+          className="col-span-3"
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="fecha_fin" className="text-right">
+          Fecha de Fin
+        </Label>
+        <Input
+          id="fecha_fin"
+          name="fecha_fin"
+          type="date"
+          defaultValue={initialData?.fecha_fin || ""}
+          className="col-span-3"
         />
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
@@ -71,45 +103,27 @@ export function PartnershipForm({ initialData, onSuccess, onCancel }: Partnershi
             <SelectItem value="Activo">Activo</SelectItem>
             <SelectItem value="Inactivo">Inactivo</SelectItem>
             <SelectItem value="Pendiente">Pendiente</SelectItem>
+            <SelectItem value="Finalizado">Finalizado</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="fecha_inicio" className="text-right">
-          Fecha Inicio
+        <Label htmlFor="descripcion" className="text-right">
+          Descripción
         </Label>
-        <Input
-          id="fecha_inicio"
-          name="fecha_inicio"
-          type="date"
-          defaultValue={initialData?.fecha_inicio || new Date().toISOString().split("T")[0]}
-          className="col-span-3"
-          required
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="contacto_principal" className="text-right">
-          Contacto Principal
-        </Label>
-        <Input
-          id="contacto_principal"
-          name="contacto_principal"
-          defaultValue={initialData?.contacto_principal || ""}
+        <Textarea
+          id="descripcion"
+          name="descripcion"
+          defaultValue={initialData?.descripcion || ""}
           className="col-span-3"
         />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="notas" className="text-right">
-          Notas
-        </Label>
-        <Textarea id="notas" name="notas" defaultValue={initialData?.notas || ""} className="col-span-3" />
-      </div>
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+      <div className="flex justify-end gap-2 mt-4">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
           Cancelar
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending ? "Guardando..." : isEditing ? "Guardar Cambios" : "Añadir Partnership"}
+          {isPending ? "Guardando..." : initialData ? "Actualizar Partnership" : "Añadir Partnership"}
         </Button>
       </div>
     </form>

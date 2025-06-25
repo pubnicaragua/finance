@@ -1,102 +1,94 @@
 "use client"
 
-import type React from "react"
-import { useActionState, useEffect, useState } from "react"
+import { useActionState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { addProjection, updateProjection } from "@/actions/payment-projection-actions"
+import { useToast } from "@/hooks/use-toast"
 
 interface ProjectionFormProps {
   clientId: string
-  initialData?: {
-    index: number
-    fecha: string
-    monto: number
-    descripcion?: string
-    estado?: string
-  }
-  onSuccess?: () => void
-  onCancel?: () => void
+  initialData?: { fecha: string; monto: number; descripcion?: string; estado?: string; index?: number } | null
+  onSuccess: () => void
+  onCancel: () => void
 }
 
 export function ProjectionForm({ clientId, initialData, onSuccess, onCancel }: ProjectionFormProps) {
-  const isEditing = !!initialData
-  const action = isEditing ? updateProjection : addProjection
-  const [state, formAction, isPending] = useActionState(action, null)
   const { toast } = useToast()
+  const formRef = useRef<HTMLFormElement>(null)
 
-  const [fecha, setFecha] = useState(initialData?.fecha || "")
-  const [monto, setMonto] = useState(initialData?.monto?.toString() || "")
-  const [descripcion, setDescripcion] = useState(initialData?.descripcion || "")
-  const [estado, setEstado] = useState(initialData?.estado || "Pendiente")
+  const actionToUse = initialData && initialData.index !== undefined ? updateProjection : addProjection
+
+  const [state, formAction, isPending] = useActionState(actionToUse, {
+    success: false,
+    message: "",
+  })
 
   useEffect(() => {
-    if (state?.success) {
+    if (state.message) {
       toast({
-        title: "Éxito",
+        title: state.success ? "Éxito" : "Error",
         description: state.message,
-        variant: "default",
+        variant: state.success ? "default" : "destructive",
       })
-      onSuccess?.()
-    } else if (state?.message) {
-      toast({
-        title: "Error",
-        description: state.message,
-        variant: "destructive",
-      })
+      if (state.success) {
+        onSuccess()
+        formRef.current?.reset()
+      }
     }
   }, [state, toast, onSuccess])
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const formData = new FormData(event.currentTarget)
-    // Ya no es necesario formData.append("cliente_id", clientId) aquí si usamos el input hidden
-    if (isEditing && initialData?.index !== undefined) {
-      formData.append("index", initialData.index.toString())
-    }
-    formAction(formData)
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
-      {/* Campo oculto para cliente_id */}
+    <form ref={formRef} action={formAction} className="grid gap-4 py-4">
       <input type="hidden" name="cliente_id" value={clientId} />
-      {/* ... (el resto de tu formulario de proyección) ... */}
-      <div className="space-y-2">
-        <Label htmlFor="fecha">Fecha</Label>
-        <Input id="fecha" name="fecha" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+      {initialData && initialData.index !== undefined && <input type="hidden" name="index" value={initialData.index} />}
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="fecha" className="text-right">
+          Fecha
+        </Label>
+        <Input
+          id="fecha"
+          name="fecha"
+          type="date"
+          defaultValue={initialData?.fecha || new Date().toISOString().split("T")[0]}
+          className="col-span-3"
+          required
+        />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="monto">Monto</Label>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="monto" className="text-right">
+          Monto
+        </Label>
         <Input
           id="monto"
           name="monto"
           type="number"
           step="0.01"
-          placeholder="0.00"
-          value={monto}
-          onChange={(e) => setMonto(e.target.value)}
+          defaultValue={initialData?.monto || ""}
+          className="col-span-3"
           required
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="descripcion">Descripción (Opcional)</Label>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="descripcion" className="text-right">
+          Descripción
+        </Label>
         <Textarea
           id="descripcion"
           name="descripcion"
-          placeholder="Comentarios adicionales"
-          value={descripcion}
-          onChange={(e) => setDescripcion(e.target.value)}
+          defaultValue={initialData?.descripcion || ""}
+          className="col-span-3"
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="estado">Estado</Label>
-        <Select name="estado" value={estado} onValueChange={setEstado}>
-          <SelectTrigger id="estado">
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="estado" className="text-right">
+          Estado
+        </Label>
+        <Select name="estado" defaultValue={initialData?.estado || "Pendiente"}>
+          <SelectTrigger className="col-span-3">
             <SelectValue placeholder="Selecciona un estado" />
           </SelectTrigger>
           <SelectContent>
@@ -106,18 +98,12 @@ export function ProjectionForm({ clientId, initialData, onSuccess, onCancel }: P
           </SelectContent>
         </Select>
       </div>
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+      <div className="flex justify-end gap-2 mt-4">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
           Cancelar
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending
-            ? isEditing
-              ? "Actualizando..."
-              : "Añadiendo..."
-            : isEditing
-              ? "Actualizar Proyección"
-              : "Añadir Proyección"}
+          {isPending ? "Guardando..." : initialData ? "Actualizar Proyección" : "Añadir Proyección"}
         </Button>
       </div>
     </form>

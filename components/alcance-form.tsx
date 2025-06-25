@@ -1,102 +1,93 @@
 "use client"
 
-import type React from "react"
-import { useActionState, useEffect, useState } from "react"
+import { useActionState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { addAlcance, updateAlcance } from "@/actions/project-updates-actions"
-import type { Tables } from "@/lib/database.types"
+import { useToast } from "@/hooks/use-toast"
+import type { TablesUpdate } from "@/lib/database.types"
 
 interface AlcanceFormProps {
   clientId: string
-  initialData?: Tables<"alcances_desarrollo">
-  onSuccess?: () => void
-  onCancel?: () => void
+  initialData?: TablesUpdate<"alcances_desarrollo"> | null
+  onSuccess: () => void
+  onCancel: () => void
 }
 
 export function AlcanceForm({ clientId, initialData, onSuccess, onCancel }: AlcanceFormProps) {
-  const isEditing = !!initialData
-  const action = isEditing ? updateAlcance : addAlcance
-  const [state, formAction, isPending] = useActionState(action, null)
   const { toast } = useToast()
+  const formRef = useRef<HTMLFormElement>(null)
 
-  const [nombreModulo, setNombreModulo] = useState(initialData?.nombre_modulo || "")
-  const [descripcion, setDescripcion] = useState(initialData?.descripcion || "")
-  const [fechaImplementacion, setFechaImplementacion] = useState(initialData?.fecha_implementacion || "")
-  const [estado, setEstado] = useState(initialData?.estado || "Pendiente")
+  const actionToUse = initialData ? updateAlcance : addAlcance
+
+  const [state, formAction, isPending] = useActionState(actionToUse, {
+    success: false,
+    message: "",
+  })
 
   useEffect(() => {
-    if (state?.success) {
+    if (state.message) {
       toast({
-        title: "Éxito",
+        title: state.success ? "Éxito" : "Error",
         description: state.message,
-        variant: "default",
+        variant: state.success ? "default" : "destructive",
       })
-      onSuccess?.()
-    } else if (state?.message) {
-      toast({
-        title: "Error",
-        description: state.message,
-        variant: "destructive",
-      })
+      if (state.success) {
+        onSuccess()
+        formRef.current?.reset()
+      }
     }
   }, [state, toast, onSuccess])
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const formData = new FormData(event.currentTarget)
-    // Campo oculto para cliente_id
-    formData.append("cliente_id", clientId) // Asegura que clientId se envía
-    if (isEditing && initialData?.id) {
-      formData.append("id", initialData.id)
-    }
-    formAction(formData)
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
-      {/* Campo oculto para cliente_id */}
+    <form ref={formRef} action={formAction} className="grid gap-4 py-4">
       <input type="hidden" name="cliente_id" value={clientId} />
-      <div className="space-y-2">
-        <Label htmlFor="nombre_modulo">Nombre del Módulo</Label>
+      {initialData && <input type="hidden" name="id" value={initialData.id} />}
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="nombre_modulo" className="text-right">
+          Nombre del Módulo
+        </Label>
         <Input
           id="nombre_modulo"
           name="nombre_modulo"
-          placeholder="Ej: Módulo de Facturación"
-          value={nombreModulo}
-          onChange={(e) => setNombreModulo(e.target.value)}
+          defaultValue={initialData?.nombre_modulo || ""}
+          className="col-span-3"
           required
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="descripcion">Descripción</Label>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="descripcion" className="text-right">
+          Descripción
+        </Label>
         <Textarea
           id="descripcion"
           name="descripcion"
-          placeholder="Detalles del alcance del módulo"
-          value={descripcion}
-          onChange={(e) => setDescripcion(e.target.value)}
+          defaultValue={initialData?.descripcion || ""}
+          className="col-span-3"
           required
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="fecha_implementacion">Fecha de Implementación</Label>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="fecha_implementacion" className="text-right">
+          Fecha de Implementación
+        </Label>
         <Input
           id="fecha_implementacion"
           name="fecha_implementacion"
           type="date"
-          value={fechaImplementacion}
-          onChange={(e) => setFechaImplementacion(e.target.value)}
+          defaultValue={initialData?.fecha_implementacion || new Date().toISOString().split("T")[0]}
+          className="col-span-3"
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="estado">Estado</Label>
-        <Select name="estado" value={estado} onValueChange={setEstado}>
-          <SelectTrigger id="estado">
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="estado" className="text-right">
+          Estado
+        </Label>
+        <Select name="estado" defaultValue={initialData?.estado || "Pendiente"}>
+          <SelectTrigger className="col-span-3">
             <SelectValue placeholder="Selecciona un estado" />
           </SelectTrigger>
           <SelectContent>
@@ -107,18 +98,12 @@ export function AlcanceForm({ clientId, initialData, onSuccess, onCancel }: Alca
           </SelectContent>
         </Select>
       </div>
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+      <div className="flex justify-end gap-2 mt-4">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
           Cancelar
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending
-            ? isEditing
-              ? "Actualizando..."
-              : "Añadiendo..."
-            : isEditing
-              ? "Actualizar Alcance"
-              : "Añadir Alcance"}
+          {isPending ? "Guardando..." : initialData ? "Actualizar Alcance" : "Añadir Alcance"}
         </Button>
       </div>
     </form>

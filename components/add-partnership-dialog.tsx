@@ -1,21 +1,21 @@
 "use client"
 
 import { useState } from "react"
-import { PlusIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { PartnershipForm } from "@/components/partnership-form"
+import { PlusIcon } from "lucide-react"
 
 interface AddPartnershipDialogProps {
-  onPartnershipAdded: () => void // Callback para cuando se añade un partnership con éxito
+  onPartnershipAdded: () => void
 }
 
 export function AddPartnershipDialog({ onPartnershipAdded }: AddPartnershipDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   const handleSuccess = () => {
-    setIsOpen(false) // Cerrar el diálogo
-    onPartnershipAdded() // Notificar al padre que un partnership fue añadido
+    setIsOpen(false)
+    onPartnershipAdded() // Llama a la Server Action para revalidar
   }
 
   return (

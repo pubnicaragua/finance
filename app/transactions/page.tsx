@@ -7,7 +7,7 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { PlusIcon } from "lucide-react"
 import { TransactionTable } from "./TransactionTable"
-import { TransactionForm } from "@/components/transaction-form" // Importación actualizada
+import { TransactionForm } from "@/components/transaction-form"
 import type { Tables } from "@/lib/database.types"
 
 export default function TransactionsPage() {
@@ -17,7 +17,7 @@ export default function TransactionsPage() {
   const handleSuccess = () => {
     setIsFormOpen(false)
     setEditingTransaction(null)
-    // Revalidar datos si es necesario, aunque las Server Actions ya lo hacen
+    // TransactionTable ya tiene su propio useEffect para revalidar
   }
 
   const handleEdit = (transaction: Tables<"transacciones">) => {

@@ -1,101 +1,93 @@
 "use client"
 
-import type React from "react"
-import { useActionState, useEffect, useState } from "react"
+import { useActionState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
 import { addPayment, updatePayment } from "@/actions/payment-projection-actions"
+import { useToast } from "@/hooks/use-toast"
 
 interface PaymentFormProps {
   clientId: string
-  initialData?: {
-    index: number
-    fecha: string
-    monto: number
-    descripcion?: string
-  }
-  onSuccess?: () => void
-  onCancel?: () => void
+  initialData?: { fecha: string; monto: number; descripcion?: string; index?: number } | null
+  onSuccess: () => void
+  onCancel: () => void
 }
 
 export function PaymentForm({ clientId, initialData, onSuccess, onCancel }: PaymentFormProps) {
-  const isEditing = !!initialData
-  const action = isEditing ? updatePayment : addPayment
-  const [state, formAction, isPending] = useActionState(action, null)
   const { toast } = useToast()
+  const formRef = useRef<HTMLFormElement>(null)
 
-  const [fecha, setFecha] = useState(initialData?.fecha || "")
-  const [monto, setMonto] = useState(initialData?.monto?.toString() || "")
-  const [descripcion, setDescripcion] = useState(initialData?.descripcion || "")
+  const actionToUse = initialData && initialData.index !== undefined ? updatePayment : addPayment
+
+  const [state, formAction, isPending] = useActionState(actionToUse, {
+    success: false,
+    message: "",
+  })
 
   useEffect(() => {
-    if (state?.success) {
+    if (state.message) {
       toast({
-        title: "Éxito",
+        title: state.success ? "Éxito" : "Error",
         description: state.message,
-        variant: "default",
+        variant: state.success ? "default" : "destructive",
       })
-      onSuccess?.()
-    } else if (state?.message) {
-      toast({
-        title: "Error",
-        description: state.message,
-        variant: "destructive",
-      })
+      if (state.success) {
+        onSuccess()
+        formRef.current?.reset()
+      }
     }
   }, [state, toast, onSuccess])
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const formData = new FormData(event.currentTarget)
-    // Ya no es necesario formData.append("cliente_id", clientId) aquí si usamos el input hidden
-    if (isEditing && initialData?.index !== undefined) {
-      formData.append("index", initialData.index.toString())
-    }
-    formAction(formData)
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
-      {/* Campo oculto para cliente_id */}
+    <form ref={formRef} action={formAction} className="grid gap-4 py-4">
       <input type="hidden" name="cliente_id" value={clientId} />
-      {/* ... (el resto de tu formulario de pago) ... */}
-      <div className="space-y-2">
-        <Label htmlFor="fecha">Fecha</Label>
-        <Input id="fecha" name="fecha" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+      {initialData && initialData.index !== undefined && <input type="hidden" name="index" value={initialData.index} />}
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="fecha" className="text-right">
+          Fecha
+        </Label>
+        <Input
+          id="fecha"
+          name="fecha"
+          type="date"
+          defaultValue={initialData?.fecha || new Date().toISOString().split("T")[0]}
+          className="col-span-3"
+          required
+        />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="monto">Monto</Label>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="monto" className="text-right">
+          Monto
+        </Label>
         <Input
           id="monto"
           name="monto"
           type="number"
           step="0.01"
-          placeholder="0.00"
-          value={monto}
-          onChange={(e) => setMonto(e.target.value)}
+          defaultValue={initialData?.monto || ""}
+          className="col-span-3"
           required
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="descripcion">Descripción (Opcional)</Label>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="descripcion" className="text-right">
+          Descripción
+        </Label>
         <Textarea
           id="descripcion"
           name="descripcion"
-          placeholder="Comentarios adicionales"
-          value={descripcion}
-          onChange={(e) => setDescripcion(e.target.value)}
+          defaultValue={initialData?.descripcion || ""}
+          className="col-span-3"
         />
       </div>
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+      <div className="flex justify-end gap-2 mt-4">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
           Cancelar
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending ? (isEditing ? "Actualizando..." : "Añadiendo...") : isEditing ? "Actualizar Pago" : "Añadir Pago"}
+          {isPending ? "Guardando..." : initialData ? "Actualizar Pago" : "Añadir Pago"}
         </Button>
       </div>
     </form>
