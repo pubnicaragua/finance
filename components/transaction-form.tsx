@@ -18,8 +18,8 @@ interface TransactionFormProps {
   onSuccess?: () => void
 }
 
-export default function TransactionForm({ initialData, onSuccess }: TransactionFormProps) {
-  // Restablecido a exportación por defecto
+// Exportación nombrada para compatibilidad con módulos existentes
+export function TransactionForm({ initialData, onSuccess }: TransactionFormProps) {
   const isEditing = !!initialData
   const action = isEditing ? updateTransaction : createTransaction
   const [state, formAction, isPending] = useActionState(action, null)
@@ -265,3 +265,6 @@ export default function TransactionForm({ initialData, onSuccess }: TransactionF
     </form>
   )
 }
+
+// Exportación por defecto para compatibilidad con importaciones existentes
+export default TransactionForm

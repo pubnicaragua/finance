@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { PlusIcon } from "lucide-react"
+import { PlusIcon } from 'lucide-react'
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 
@@ -49,7 +49,7 @@ export default async function TransactionsPage() {
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4">
         <h2 className="text-2xl font-bold">Gestión de Transacciones</h2>
-        <p className="text-muted-foreground">Administra tus ingresos y egresos.</p>
+        <p className="text-muted-foreground">Registra y administra todas las transacciones financieras.</p>
 
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-semibold">Lista de Transacciones</h3>

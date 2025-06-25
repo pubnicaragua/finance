@@ -14,8 +14,8 @@ interface PasivoCorrienteFormProps {
   onSuccess?: () => void
 }
 
-export default function PasivoCorrienteForm({ initialData, onSuccess }: PasivoCorrienteFormProps) {
-  // Restablecido a exportación por defecto
+// Exportación nombrada para compatibilidad con módulos existentes
+export function PasivoCorrienteForm({ initialData, onSuccess }: PasivoCorrienteFormProps) {
   const isEditing = !!initialData
   const action = isEditing ? updatePasivoCorriente : addPasivoCorriente
   const [state, formAction, isPending] = useActionState(action, null)
@@ -86,3 +86,6 @@ export default function PasivoCorrienteForm({ initialData, onSuccess }: PasivoCo
     </form>
   )
 }
+
+// Exportación por defecto para compatibilidad con importaciones existentes
+export default PasivoCorrienteForm

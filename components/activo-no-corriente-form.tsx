@@ -14,8 +14,8 @@ interface ActivoNoCorrienteFormProps {
   onSuccess?: () => void
 }
 
-export default function ActivoNoCorrienteForm({ initialData, onSuccess }: ActivoNoCorrienteFormProps) {
-  // Restablecido a exportación por defecto
+// Exportación nombrada para compatibilidad con módulos existentes
+export function ActivoNoCorrienteForm({ initialData, onSuccess }: ActivoNoCorrienteFormProps) {
   const isEditing = !!initialData
   const action = isEditing ? updateActivoNoCorriente : addActivoNoCorriente
   const [state, formAction, isPending] = useActionState(action, null)
@@ -100,3 +100,6 @@ export default function ActivoNoCorrienteForm({ initialData, onSuccess }: Activo
     </form>
   )
 }
+
+// Exportación por defecto para compatibilidad con importaciones existentes
+export default ActivoNoCorrienteForm
