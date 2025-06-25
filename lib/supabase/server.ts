@@ -1,5 +1,18 @@
+// ⚠️  Cargamos 'next/headers' sólo si existe (App Router):
+let cookies: () => ReturnType<typeof import("next/headers")["cookies"]>
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  cookies = require("next/headers").cookies
+} catch {
+  // Estamos fuera del App Router (por ejemplo en /pages). Devolvemos stub.
+  cookies = () => ({
+    get: () => undefined,
+    set: () => undefined,
+  })
+}
+
 import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
+// import { cookies } from "next/headers" // Removed original import
 
 export function createServerSupabase() {
   const cookieStore = cookies()
