@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic"
 import { createClient } from "@/lib/supabase/server" // Importación directa del cliente de servidor
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"

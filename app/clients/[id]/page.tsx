@@ -16,10 +16,8 @@ import { ProjectionForm } from "@/components/projection-form"
 import { AvanceForm } from "@/components/avance-form"
 import { AlcanceForm } from "@/components/alcance-form"
 import { getClientById } from "@/actions/client-actions"
-import { getPaymentsByClientId } from "@/actions/payment-projection-actions"
-import { getAvancesByClientId } from "@/actions/project-updates-actions"
-import { getAlcancesByClientId } from "@/actions/project-updates-actions"
-import { getProjectionsByClientId } from "@/actions/payment-projection-actions"
+import { getPaymentsByClientId, getProjectionsByClientId } from "@/actions/payment-projection-actions" // Importar correctamente
+import { getAvancesByClientId, getAlcancesByClientId } from "@/actions/project-updates-actions" // Importar correctamente
 import { useToast } from "@/hooks/use-toast"
 import { useEffect, useState } from "react"
 
@@ -34,40 +32,47 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true)
-      setError(null)
-      try {
-        const clientData = await getClientById(clientId)
-        if (!clientData) {
-          notFound()
-        }
-        setClient(clientData)
+  // Estados para controlar la apertura/cierre de los diálogos
+  const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false)
+  const [isProjectionFormOpen, setIsProjectionFormOpen] = useState(false)
+  const [isAvanceFormOpen, setIsAvanceFormOpen] = useState(false)
+  const [isAlcanceFormOpen, setIsAlcanceFormOpen] = useState(false)
 
-        const paymentsData = await getPaymentsByClientId(clientId)
-        setPayments(paymentsData || [])
-
-        const projectionsData = await getProjectionsByClientId(clientId)
-        setProjections(projectionsData || [])
-
-        const avancesData = await getAvancesByClientId(clientId)
-        setAvances(avancesData || [])
-
-        const alcancesData = await getAlcancesByClientId(clientId)
-        setAlcances(alcancesData || [])
-      } catch (err) {
-        console.error("Failed to fetch client data:", err)
-        setError("Failed to load client data. Please try again.")
-        toast({
-          title: "Error",
-          description: "No se pudo cargar la información del cliente.",
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
+  const fetchData = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const clientData = await getClientById(clientId)
+      if (!clientData) {
+        notFound()
       }
+      setClient(clientData)
+
+      const paymentsData = await getPaymentsByClientId(clientId)
+      setPayments(paymentsData || [])
+
+      const projectionsData = await getProjectionsByClientId(clientId)
+      setProjections(projectionsData || [])
+
+      const avancesData = await getAvancesByClientId(clientId)
+      setAvances(avancesData || [])
+
+      const alcancesData = await getAlcancesByClientId(clientId)
+      setAlcances(alcancesData || [])
+    } catch (err: any) {
+      console.error("Failed to fetch client data:", err)
+      setError("Failed to load client data. Please try again.")
+      toast({
+        title: "Error",
+        description: err.message || "No se pudo cargar la información del cliente.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
     fetchData()
   }, [clientId, toast])
 
@@ -84,7 +89,8 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-950 p-4 sm:p-6 lg:p-8">
+    // Eliminar min-h-screen y ajustar padding si se requiere
+    <div className="flex flex-col flex-1 p-4 sm:p-6 lg:p-8">
       <ClientInfoCard client={client} />
 
       <Tabs defaultValue="payments" className="w-full mt-6">
@@ -98,7 +104,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Historial de Pagos</CardTitle>
-              <Dialog>
+              <Dialog open={isPaymentFormOpen} onOpenChange={setIsPaymentFormOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm">Añadir Pago</Button>
                 </DialogTrigger>
@@ -106,7 +112,14 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                   <DialogHeader>
                     <DialogTitle>Añadir Nuevo Pago</DialogTitle>
                   </DialogHeader>
-                  <PaymentForm clientId={clientId} />
+                  <PaymentForm
+                    clientId={clientId}
+                    onSuccess={() => {
+                      setIsPaymentFormOpen(false)
+                      fetchData()
+                    }}
+                    onCancel={() => setIsPaymentFormOpen(false)}
+                  />
                 </DialogContent>
               </Dialog>
             </CardHeader>
@@ -121,7 +134,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Proyecciones de Pagos</CardTitle>
-              <Dialog>
+              <Dialog open={isProjectionFormOpen} onOpenChange={setIsProjectionFormOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm">Añadir Proyección</Button>
                 </DialogTrigger>
@@ -129,7 +142,14 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                   <DialogHeader>
                     <DialogTitle>Añadir Nueva Proyección</DialogTitle>
                   </DialogHeader>
-                  <ProjectionForm clientId={clientId} />
+                  <ProjectionForm
+                    clientId={clientId}
+                    onSuccess={() => {
+                      setIsProjectionFormOpen(false)
+                      fetchData()
+                    }}
+                    onCancel={() => setIsProjectionFormOpen(false)}
+                  />
                 </DialogContent>
               </Dialog>
             </CardHeader>
@@ -144,7 +164,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Avances del Proyecto</CardTitle>
-              <Dialog>
+              <Dialog open={isAvanceFormOpen} onOpenChange={setIsAvanceFormOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm">Añadir Avance</Button>
                 </DialogTrigger>
@@ -152,7 +172,14 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                   <DialogHeader>
                     <DialogTitle>Añadir Nuevo Avance</DialogTitle>
                   </DialogHeader>
-                  <AvanceForm clientId={clientId} />
+                  <AvanceForm
+                    clientId={clientId}
+                    onSuccess={() => {
+                      setIsAvanceFormOpen(false)
+                      fetchData()
+                    }}
+                    onCancel={() => setIsAvanceFormOpen(false)}
+                  />
                 </DialogContent>
               </Dialog>
             </CardHeader>
@@ -167,7 +194,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Alcances de Desarrollo</CardTitle>
-              <Dialog>
+              <Dialog open={isAlcanceFormOpen} onOpenChange={setIsAlcanceFormOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm">Añadir Alcance</Button>
                 </DialogTrigger>
@@ -175,7 +202,14 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                   <DialogHeader>
                     <DialogTitle>Añadir Nuevo Alcance</DialogTitle>
                   </DialogHeader>
-                  <AlcanceForm clientId={clientId} />
+                  <AlcanceForm
+                    clientId={clientId}
+                    onSuccess={() => {
+                      setIsAlcanceFormOpen(false)
+                      fetchData()
+                    }}
+                    onCancel={() => setIsAlcanceFormOpen(false)}
+                  />
                 </DialogContent>
               </Dialog>
             </CardHeader>

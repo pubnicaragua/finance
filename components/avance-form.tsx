@@ -1,27 +1,26 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useTransition, useEffect } from "react"
-import { useActionState } from "react"
+import { useActionState, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { addAvance, updateAvance } from "@/actions/project-updates-actions"
 import { useToast } from "@/hooks/use-toast"
-import { DialogFooter } from "@/components/ui/dialog"
-import type { TablesUpdate } from "@/lib/database.types"
+import { addAvance, updateAvance } from "@/actions/project-updates-actions"
+import type { Tables } from "@/lib/database.types"
 
 interface AvanceFormProps {
-  initialData?: TablesUpdate<"avances_proyecto"> & { id: string }
-  clienteId: string
-  onSuccess: (message: string) => void
+  clientId: string
+  initialData?: Tables<"avances_proyecto">
+  onSuccess?: () => void
+  onCancel?: () => void
 }
 
-export function AvanceForm({ initialData, clienteId, onSuccess }: AvanceFormProps) {
-  const [state, formAction] = useActionState(initialData ? updateAvance : addAvance, { success: false, message: "" })
-  const [isPending, startTransition] = useTransition()
+export function AvanceForm({ clientId, initialData, onSuccess, onCancel }: AvanceFormProps) {
+  const isEditing = !!initialData
+  const action = isEditing ? updateAvance : addAvance
+  const [state, formAction, isPending] = useActionState(action, null)
   const { toast } = useToast()
 
   const [fecha, setFecha] = useState(initialData?.fecha || "")
@@ -30,97 +29,91 @@ export function AvanceForm({ initialData, clienteId, onSuccess }: AvanceFormProp
   const [comentariosCliente, setComentariosCliente] = useState(initialData?.comentarios_cliente || "")
 
   useEffect(() => {
-    if (state.message) {
+    if (state?.success) {
       toast({
-        title: state.success ? "Éxito" : "Error",
+        title: "Éxito",
         description: state.message,
-        variant: state.success ? "default" : "destructive",
+        variant: "default",
       })
-      if (state.success) {
-        onSuccess(state.message)
-      }
+      onSuccess?.()
+    } else if (state?.message) {
+      toast({
+        title: "Error",
+        description: state.message,
+        variant: "destructive",
+      })
     }
   }, [state, toast, onSuccess])
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const dataToSend = {
-      cliente_id: clienteId, // Aseguramos que cliente_id siempre se envíe
-      fecha,
-      descripcion,
-      porcentaje_avance: Number.parseFloat(porcentajeAvance),
-      comentarios_cliente: comentariosCliente,
-      ...(initialData && { id: initialData.id }), // Solo si es una actualización
+    const formData = new FormData(event.currentTarget)
+    // Campo oculto para cliente_id
+    formData.append("cliente_id", clientId) // Asegura que clientId se envía
+    if (isEditing && initialData?.id) {
+      formData.append("id", initialData.id)
     }
-    console.log("Data to send from AvanceForm:", dataToSend) // Depuración
-    startTransition(() => {
-      formAction(dataToSend)
-    })
+    formAction(formData)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-      <input type="hidden" name="cliente_id" value={clienteId} /> {/* Hidden input for cliente_id */}
-      {initialData && <input type="hidden" name="id" value={initialData.id} />}
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="fecha" className="text-right">
-          Fecha
-        </Label>
-        <Input
-          id="fecha"
-          name="fecha"
-          type="date"
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-          className="col-span-3"
-          required
-        />
+    <form onSubmit={handleSubmit} className="grid gap-4">
+      {/* Campo oculto para cliente_id */}
+      <input type="hidden" name="cliente_id" value={clientId} />
+      <div className="space-y-2">
+        <Label htmlFor="fecha">Fecha</Label>
+        <Input id="fecha" name="fecha" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="descripcion" className="text-right">
-          Descripción
-        </Label>
+      <div className="space-y-2">
+        <Label htmlFor="descripcion">Descripción del Avance</Label>
         <Textarea
           id="descripcion"
           name="descripcion"
+          placeholder="Detalles del avance realizado"
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
-          className="col-span-3"
           required
         />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="porcentaje_avance" className="text-right">
-          % Avance
-        </Label>
+      <div className="space-y-2">
+        <Label htmlFor="porcentaje_avance">Porcentaje de Avance (%)</Label>
         <Input
           id="porcentaje_avance"
           name="porcentaje_avance"
           type="number"
           step="0.01"
+          min="0"
+          max="100"
+          placeholder="Ej: 75.50"
           value={porcentajeAvance}
           onChange={(e) => setPorcentajeAvance(e.target.value)}
-          className="col-span-3"
           required
         />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="comentarios_cliente" className="text-right">
-          Comentarios Cliente
-        </Label>
+      <div className="space-y-2">
+        <Label htmlFor="comentarios_cliente">Comentarios del Cliente (Opcional)</Label>
         <Textarea
           id="comentarios_cliente"
           name="comentarios_cliente"
+          placeholder="Feedback o solicitudes del cliente"
           value={comentariosCliente}
           onChange={(e) => setComentariosCliente(e.target.value)}
-          className="col-span-3"
         />
       </div>
-      <DialogFooter>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Guardando..." : initialData ? "Actualizar Avance" : "Añadir Avance"}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancelar
         </Button>
-      </DialogFooter>
+        <Button type="submit" disabled={isPending}>
+          {isPending
+            ? isEditing
+              ? "Actualizando..."
+              : "Añadiendo..."
+            : isEditing
+              ? "Actualizar Avance"
+              : "Añadir Avance"}
+        </Button>
+      </div>
     </form>
   )
 }

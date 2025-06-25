@@ -1,7 +1,6 @@
-"use client"
+"use client" // Asegurarse de que esté presente
 
 import type React from "react"
-
 import { useEffect, useState } from "react"
 import { addQaIssue, resolveQaIssue } from "@/actions/qa-actions"
 import { Button } from "@/components/ui/button"
@@ -50,7 +49,7 @@ export default function QaStatusPage() {
 
   useEffect(() => {
     fetchQaIssues()
-  }, [])
+  }, []) // Solo se ejecuta al montar el componente
 
   const handleAddIssue = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,7 +65,7 @@ export default function QaStatusPage() {
       })
       setFeature("")
       setDescription("")
-      fetchQaIssues() // Re-fetch issues to update the list
+      await fetchQaIssues() // Volver a obtener los issues para actualizar la lista
     } else {
       toast({
         title: "Error",
@@ -83,7 +82,7 @@ export default function QaStatusPage() {
         title: "Success",
         description: result.message,
       })
-      fetchQaIssues() // Re-fetch issues to update the list
+      await fetchQaIssues() // Volver a obtener los issues para actualizar la lista
     } else {
       toast({
         title: "Error",
@@ -94,7 +93,8 @@ export default function QaStatusPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-950 p-4 sm:p-6 lg:p-8">
+    // Ajustar padding y eliminar min-h-screen si es necesario
+    <div className="flex flex-col flex-1 p-4 sm:p-6 lg:p-8">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50">QA Status Page</h1>
         <p className="text-gray-600 dark:text-gray-400">Monitor and track software quality assurance issues.</p>

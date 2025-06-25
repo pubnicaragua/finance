@@ -1,28 +1,27 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useTransition, useEffect } from "react"
-import { useActionState } from "react"
+import { useActionState, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { addAlcance, updateAlcance } from "@/actions/project-updates-actions"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { DialogFooter } from "@/components/ui/dialog"
-import type { TablesUpdate } from "@/lib/database.types"
+import { addAlcance, updateAlcance } from "@/actions/project-updates-actions"
+import type { Tables } from "@/lib/database.types"
 
 interface AlcanceFormProps {
-  initialData?: TablesUpdate<"alcances_desarrollo"> & { id: string }
-  clienteId: string
-  onSuccess: (message: string) => void
+  clientId: string
+  initialData?: Tables<"alcances_desarrollo">
+  onSuccess?: () => void
+  onCancel?: () => void
 }
 
-export function AlcanceForm({ initialData, clienteId, onSuccess }: AlcanceFormProps) {
-  const [state, formAction] = useActionState(initialData ? updateAlcance : addAlcance, { success: false, message: "" })
-  const [isPending, startTransition] = useTransition()
+export function AlcanceForm({ clientId, initialData, onSuccess, onCancel }: AlcanceFormProps) {
+  const isEditing = !!initialData
+  const action = isEditing ? updateAlcance : addAlcance
+  const [state, formAction, isPending] = useActionState(action, null)
   const { toast } = useToast()
 
   const [nombreModulo, setNombreModulo] = useState(initialData?.nombre_modulo || "")
@@ -31,98 +30,97 @@ export function AlcanceForm({ initialData, clienteId, onSuccess }: AlcanceFormPr
   const [estado, setEstado] = useState(initialData?.estado || "Pendiente")
 
   useEffect(() => {
-    if (state.message) {
+    if (state?.success) {
       toast({
-        title: state.success ? "Éxito" : "Error",
+        title: "Éxito",
         description: state.message,
-        variant: state.success ? "default" : "destructive",
+        variant: "default",
       })
-      if (state.success) {
-        onSuccess(state.message)
-      }
+      onSuccess?.()
+    } else if (state?.message) {
+      toast({
+        title: "Error",
+        description: state.message,
+        variant: "destructive",
+      })
     }
   }, [state, toast, onSuccess])
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const dataToSend = {
-      cliente_id: clienteId, // Aseguramos que cliente_id siempre se envíe
-      nombre_modulo: nombreModulo,
-      descripcion,
-      fecha_implementacion: fechaImplementacion,
-      estado,
-      ...(initialData && { id: initialData.id }), // Solo si es una actualización
+    const formData = new FormData(event.currentTarget)
+    // Campo oculto para cliente_id
+    formData.append("cliente_id", clientId) // Asegura que clientId se envía
+    if (isEditing && initialData?.id) {
+      formData.append("id", initialData.id)
     }
-    console.log("Data to send from AlcanceForm:", dataToSend) // Depuración
-    startTransition(() => {
-      formAction(dataToSend)
-    })
+    formAction(formData)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-      <input type="hidden" name="cliente_id" value={clienteId} /> {/* Hidden input for cliente_id */}
-      {initialData && <input type="hidden" name="id" value={initialData.id} />}
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="nombre_modulo" className="text-right">
-          Módulo
-        </Label>
+    <form onSubmit={handleSubmit} className="grid gap-4">
+      {/* Campo oculto para cliente_id */}
+      <input type="hidden" name="cliente_id" value={clientId} />
+      <div className="space-y-2">
+        <Label htmlFor="nombre_modulo">Nombre del Módulo</Label>
         <Input
           id="nombre_modulo"
           name="nombre_modulo"
+          placeholder="Ej: Módulo de Facturación"
           value={nombreModulo}
           onChange={(e) => setNombreModulo(e.target.value)}
-          className="col-span-3"
           required
         />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="descripcion" className="text-right">
-          Descripción
-        </Label>
+      <div className="space-y-2">
+        <Label htmlFor="descripcion">Descripción</Label>
         <Textarea
           id="descripcion"
           name="descripcion"
+          placeholder="Detalles del alcance del módulo"
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
-          className="col-span-3"
           required
         />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="fecha_implementacion" className="text-right">
-          Fecha Implementación
-        </Label>
+      <div className="space-y-2">
+        <Label htmlFor="fecha_implementacion">Fecha de Implementación</Label>
         <Input
           id="fecha_implementacion"
           name="fecha_implementacion"
           type="date"
           value={fechaImplementacion}
           onChange={(e) => setFechaImplementacion(e.target.value)}
-          className="col-span-3"
         />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="estado" className="text-right">
-          Estado
-        </Label>
-        <Select value={estado} onValueChange={setEstado} name="estado">
-          <SelectTrigger className="col-span-3">
+      <div className="space-y-2">
+        <Label htmlFor="estado">Estado</Label>
+        <Select name="estado" value={estado} onValueChange={setEstado}>
+          <SelectTrigger id="estado">
             <SelectValue placeholder="Selecciona un estado" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="Pendiente">Pendiente</SelectItem>
             <SelectItem value="En Progreso">En Progreso</SelectItem>
             <SelectItem value="Completado">Completado</SelectItem>
-            <SelectItem value="Cancelado">Cancelado</SelectItem>
+            <SelectItem value="En Revisión">En Revisión</SelectItem>
           </SelectContent>
         </Select>
       </div>
-      <DialogFooter>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Guardando..." : initialData ? "Actualizar Alcance" : "Añadir Alcance"}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancelar
         </Button>
-      </DialogFooter>
+        <Button type="submit" disabled={isPending}>
+          {isPending
+            ? isEditing
+              ? "Actualizando..."
+              : "Añadiendo..."
+            : isEditing
+              ? "Actualizar Alcance"
+              : "Añadir Alcance"}
+        </Button>
+      </div>
     </form>
   )
 }

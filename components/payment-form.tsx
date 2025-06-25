@@ -1,24 +1,28 @@
 "use client"
 
 import type React from "react"
-
-import { useActionState, useState, useEffect, startTransition } from "react"
+import { useActionState, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { addPayment, updatePayment } from "@/actions/payment-projection-actions"
-import type { Tables } from "@/lib/database.types"
 
 interface PaymentFormProps {
-  clienteId: string // Aseguramos que clienteId se reciba como prop
-  initialData?: Tables<"clientes">["historial_pagos"][number] & { index?: number }
+  clientId: string
+  initialData?: {
+    index: number
+    fecha: string
+    monto: number
+    descripcion?: string
+  }
   onSuccess?: () => void
   onCancel?: () => void
 }
 
-export function PaymentForm({ clienteId, initialData, onSuccess, onCancel }: PaymentFormProps) {
-  const isEditing = initialData && typeof initialData.index === "number"
+export function PaymentForm({ clientId, initialData, onSuccess, onCancel }: PaymentFormProps) {
+  const isEditing = !!initialData
   const action = isEditing ? updatePayment : addPayment
   const [state, formAction, isPending] = useActionState(action, null)
   const { toast } = useToast()
@@ -46,24 +50,22 @@ export function PaymentForm({ clienteId, initialData, onSuccess, onCancel }: Pay
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const data = {
-      cliente_id: clienteId, // Aseguramos que clienteId se envíe
-      fecha,
-      monto: Number.parseFloat(monto),
-      descripcion,
-      ...(isEditing && { index: initialData?.index }),
+    const formData = new FormData(event.currentTarget)
+    // Ya no es necesario formData.append("cliente_id", clientId) aquí si usamos el input hidden
+    if (isEditing && initialData?.index !== undefined) {
+      formData.append("index", initialData.index.toString())
     }
-    console.log("Client: Submitting payment data:", data) // Log para depuración
-    startTransition(() => {
-      formAction(data)
-    })
+    formAction(formData)
   }
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
+      {/* Campo oculto para cliente_id */}
+      <input type="hidden" name="cliente_id" value={clientId} />
+      {/* ... (el resto de tu formulario de pago) ... */}
       <div className="space-y-2">
         <Label htmlFor="fecha">Fecha</Label>
-        <Input id="fecha" name="fecha" type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} />
+        <Input id="fecha" name="fecha" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="monto">Monto</Label>
@@ -73,17 +75,17 @@ export function PaymentForm({ clienteId, initialData, onSuccess, onCancel }: Pay
           type="number"
           step="0.01"
           placeholder="0.00"
-          required
           value={monto}
           onChange={(e) => setMonto(e.target.value)}
+          required
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="descripcion">Descripción</Label>
-        <Input
+        <Label htmlFor="descripcion">Descripción (Opcional)</Label>
+        <Textarea
           id="descripcion"
           name="descripcion"
-          placeholder="Descripción del pago"
+          placeholder="Comentarios adicionales"
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
         />
