@@ -9,7 +9,8 @@ export default function LeadsPage() {
   // Eliminar const [isFormOpen, setIsFormOpen] = useState(false)
 
   // Esta función se pasará al Client Component y revalidará la ruta
-  const handleLeadAdded = () => {
+  const handleLeadAdded = async () => {
+    // AÑADIR 'async' AQUÍ
     "use server" // Marcar como Server Action
     revalidatePath("/leads")
   }

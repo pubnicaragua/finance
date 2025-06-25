@@ -9,7 +9,8 @@ export default function PartnershipsPage() {
   // Eliminar const [isFormOpen, setIsFormOpen] = useState(false)
 
   // Esta función se pasará al Client Component y revalidará la ruta
-  const handlePartnershipAdded = () => {
+  const handlePartnershipAdded = async () => {
+    // AÑADIR 'async' AQUÍ
     "use server" // Marcar como Server Action
     revalidatePath("/partnerships")
   }
@@ -24,7 +25,7 @@ export default function PartnershipsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Partnerships Registrados</CardTitle>
-          <CardDescription>Listado de todos los partnerships y su estado actual.</CardDescription>
+          <CardDescription>Listado de todos los acuerdos con socios.</CardDescription>
         </CardHeader>
         <CardContent>
           <PartnershipTable />
