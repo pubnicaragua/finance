@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { createTransaction, updateTransaction } from "@/actions/transaction-actions"
+import { addTransaction, updateTransaction } from "@/actions/transaction-actions" // CAMBIO: createTransaction a addTransaction
 import type { Tables } from "@/lib/database.types"
 
 interface TransactionFormProps {
@@ -19,17 +19,18 @@ interface TransactionFormProps {
   onCancel?: () => void
 }
 
-export default function TransactionForm({ initialData, onSuccess, onCancel }: TransactionFormProps) {
+export function TransactionForm({ initialData, onSuccess, onCancel }: TransactionFormProps) {
   const isEditing = !!initialData
-  const action = isEditing ? updateTransaction : createTransaction
+  const action = isEditing ? updateTransaction : addTransaction // CAMBIO: createTransaction a addTransaction
   const [state, formAction, isPending] = useActionState(action, null)
   const { toast } = useToast()
 
-  const [fecha, setFecha] = useState(initialData?.fecha || "")
+  const [fecha, setFecha] = useState(initialData?.fecha || new Date().toISOString().split("T")[0])
   const [tipo, setTipo] = useState<Tables<"transacciones">["tipo"]>(initialData?.tipo || "ingreso")
   const [monto, setMonto] = useState(initialData?.monto?.toString() || "")
-  const [descripcion, setDescripcion] = useState(initialData?.descripcion || "")
-  const [categoria, setCategoria] = useState(initialData?.categoria || "")
+  const [descripcion, setDescripcion] = useState(initialData?.detalle || "") // Mapear a 'detalle'
+  const [concepto, setConcepto] = useState(initialData?.concepto || "") // Nuevo campo 'concepto'
+  const [categoria, setCategoria] = useState(initialData?.tipo_ingreso || initialData?.tipo_egreso || "") // Mapear a tipo_ingreso/egreso
   const [aplicarComision, setAplicarComision] = useState(initialData?.aplicar_comision || false)
   const [vendedorComision, setVendedorComision] = useState(initialData?.vendedor_comision || "")
   const [comisionAplicada, setComisionAplicada] = useState(initialData?.comision_aplicada?.toString() || "")
@@ -59,11 +60,13 @@ export default function TransactionForm({ initialData, onSuccess, onCancel }: Tr
       fecha,
       tipo,
       monto: Number.parseFloat(monto),
-      descripcion,
-      categoria,
-      vendedor: aplicarComision ? vendedorComision : null,
-      comision: aplicarComision ? Number.parseFloat(comisionAplicada) : null,
-      ...(isEditing && { id: initialData?.id }), // Añadir ID solo si estamos editando
+      descripcion, // Se mapea a 'detalle' en la Server Action
+      concepto, // Nuevo campo
+      categoria, // Se mapea a 'tipo_ingreso' o 'tipo_egreso' en la Server Action
+      aplicar_comision: aplicarComision,
+      vendedor_comision: aplicarComision ? vendedorComision : null,
+      comision_aplicada: aplicarComision ? Number.parseFloat(comisionAplicada) : null,
+      ...(isEditing && { id: initialData?.id }),
     }
     startTransition(() => {
       formAction(data)
@@ -89,6 +92,17 @@ export default function TransactionForm({ initialData, onSuccess, onCancel }: Tr
         </Select>
       </div>
       <div className="space-y-2">
+        <Label htmlFor="concepto">Concepto</Label>
+        <Input
+          id="concepto"
+          name="concepto"
+          placeholder="Ej: Venta de Software, Salario, Alquiler"
+          required
+          value={concepto}
+          onChange={(e) => setConcepto(e.target.value)}
+        />
+      </div>
+      <div className="space-y-2">
         <Label htmlFor="monto">Monto</Label>
         <Input
           id="monto"
@@ -102,11 +116,11 @@ export default function TransactionForm({ initialData, onSuccess, onCancel }: Tr
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="descripcion">Descripción</Label>
+        <Label htmlFor="descripcion">Descripción (Detalle)</Label>
         <Textarea
           id="descripcion"
           name="descripcion"
-          placeholder="Descripción de la transacción"
+          placeholder="Detalles adicionales de la transacción"
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
         />
@@ -116,7 +130,7 @@ export default function TransactionForm({ initialData, onSuccess, onCancel }: Tr
         <Input
           id="categoria"
           name="categoria"
-          placeholder="Ej: Ventas, Salarios, Alquiler"
+          placeholder="Ej: Desarrollo Web, Gastos Operativos"
           value={categoria}
           onChange={(e) => setCategoria(e.target.value)}
         />
@@ -184,6 +198,3 @@ export default function TransactionForm({ initialData, onSuccess, onCancel }: Tr
     </form>
   )
 }
-
-// --- Named export requerido por otros módulos ---
-export { default as TransactionForm } from "./transaction-form"

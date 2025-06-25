@@ -71,3 +71,10 @@ export async function deleteClient(id: string) {
   revalidatePath("/clients")
   return { success: true, message: "Cliente eliminado exitosamente." }
 }
+
+export async function getClientById(id: string) {
+  const supabase = createClient()
+  const { data, error } = await supabase.from("clientes").select("*").eq("id", id).single()
+  if (error) throw new Error(error.message)
+  return data
+}

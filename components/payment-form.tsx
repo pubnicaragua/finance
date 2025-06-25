@@ -11,7 +11,7 @@ import { addPayment, updatePayment } from "@/actions/payment-projection-actions"
 import type { Tables } from "@/lib/database.types"
 
 interface PaymentFormProps {
-  clienteId: string
+  clienteId: string // Aseguramos que clienteId se reciba como prop
   initialData?: Tables<"clientes">["historial_pagos"][number] & { index?: number }
   onSuccess?: () => void
   onCancel?: () => void
@@ -47,12 +47,13 @@ export function PaymentForm({ clienteId, initialData, onSuccess, onCancel }: Pay
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const data = {
-      clienteId,
+      cliente_id: clienteId, // Aseguramos que clienteId se envíe
       fecha,
       monto: Number.parseFloat(monto),
       descripcion,
-      ...(isEditing && { index: initialData?.index }), // Añadir índice solo si estamos editando
+      ...(isEditing && { index: initialData?.index }),
     }
+    console.log("Client: Submitting payment data:", data) // Log para depuración
     startTransition(() => {
       formAction(data)
     })

@@ -1,4 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr"
+// Asegura que @supabase/storage-js esté presente en el bundle
+import "@supabase/storage-js"
 import type { Database } from "./database.types"
 
 let supabase: ReturnType<typeof createBrowserClient<Database>> | undefined

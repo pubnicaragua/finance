@@ -95,6 +95,9 @@ importers:
       '@supabase/ssr':
         specifier: latest
         version: 0.6.1(@supabase/supabase-js@2.50.1(ws@8.18.2))
+      '@supabase/storage-js':
+        specifier: latest
+        version: 2.7.3
       '@supabase/supabase-js':
         specifier: latest
         version: 2.50.1(ws@8.18.2)
@@ -111,7 +114,7 @@ importers:
         specifier: 1.0.4
         version: 1.0.4(@types/react-dom@19.0.0)(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       date-fns:
-        specifier: 4.1.0
+        specifier: latest
         version: 4.1.0
       embla-carousel-react:
         specifier: 8.5.1
@@ -1090,6 +1093,9 @@ packages:
 
   '@supabase/storage-js@2.7.1':
     resolution: {integrity: sha512-asYHcyDR1fKqrMpytAS1zjyEfvxuOIp1CIXX7ji4lHHcJKqyk+sLl/Vxgm4sN6u8zvuUtae9e4kDxQP2qrwWBA==}
+
+  '@supabase/storage-js@2.7.3':
+    resolution: {integrity: sha512-SAvZhTk764yqn37z9M6xeq3zc4Q3Wne5qIWhtqrvlIQksiZN6NMgC8YIYDhPo503dFzIlyy+bURytDGpOMEVVg==}
 
   '@supabase/supabase-js@2.50.1':
     resolution: {integrity: sha512-X4vniGZ57wJ0QF20GIX6DgLYKynwYAtq/JHqF3GEXzABKpSziLggaKL1aTfMQ2cFkVrzoEuZha5VhilO9F87Lw==}
@@ -2843,6 +2849,10 @@ snapshots:
       cookie: 1.0.2
 
   '@supabase/storage-js@2.7.1':
+    dependencies:
+      '@supabase/node-fetch': 2.6.15
+
+  '@supabase/storage-js@2.7.3':
     dependencies:
       '@supabase/node-fetch': 2.6.15
 

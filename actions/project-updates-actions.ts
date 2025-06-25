@@ -10,13 +10,38 @@ export async function addAvance(prevState: any, data: Partial<TablesInsert<"avan
   console.log("--- Server Action: addAvance called ---")
   console.log("Server: Received data:", data)
 
+  const { cliente_id, fecha, descripcion, porcentaje_avance, comentarios_cliente } = data
+
+  if (!cliente_id || typeof cliente_id !== "string" || cliente_id.trim() === "") {
+    console.error("Error: cliente_id es nulo o inválido para addAvance.")
+    return {
+      success: false,
+      message: "Error al añadir avance: El ID del cliente es requerido y debe ser una cadena válida.",
+    }
+  }
+  if (!fecha || typeof fecha !== "string" || fecha.trim() === "") {
+    console.error("Error: fecha es nulo o inválido para addAvance.")
+    return { success: false, message: "Error al añadir avance: La fecha es requerida." }
+  }
+  if (!descripcion || typeof descripcion !== "string" || descripcion.trim() === "") {
+    console.error("Error: descripcion es nulo o inválido para addAvance.")
+    return { success: false, message: "Error al añadir avance: La descripción es requerida." }
+  }
+  if (porcentaje_avance === undefined || porcentaje_avance === null || isNaN(Number(porcentaje_avance))) {
+    console.error("Error: porcentaje_avance es nulo o inválido para addAvance.")
+    return {
+      success: false,
+      message: "Error al añadir avance: El porcentaje de avance es requerido y debe ser un número.",
+    }
+  }
+
   const supabase = createClient()
   const newAvance: TablesInsert<"avances_proyecto"> = {
-    cliente_id: data.cliente_id as string,
-    fecha: data.fecha as string,
-    descripcion: data.descripcion as string,
-    porcentaje_avance: Number.parseFloat(data.porcentaje_avance as any),
-    comentarios_cliente: data.comentarios_cliente as string,
+    cliente_id: cliente_id as string,
+    fecha: fecha as string,
+    descripcion: descripcion as string,
+    porcentaje_avance: Number.parseFloat(porcentaje_avance as any),
+    comentarios_cliente: comentarios_cliente as string,
   }
 
   const { error } = await supabase.from("avances_proyecto").insert(newAvance)
@@ -34,14 +59,41 @@ export async function updateAvance(prevState: any, data: Partial<TablesUpdate<"a
   console.log("--- Server Action: updateAvance called ---")
   console.log("Server: Received data:", data)
 
+  const { id, cliente_id, fecha, descripcion, porcentaje_avance, comentarios_cliente } = data
+
+  if (!id || typeof id !== "string" || id.trim() === "") {
+    console.error("Error: ID es nulo o inválido para updateAvance.")
+    return { success: false, message: "Error al actualizar avance: El ID del avance es requerido." }
+  }
+  if (!cliente_id || typeof cliente_id !== "string" || cliente_id.trim() === "") {
+    console.error("Error: cliente_id es nulo o inválido para updateAvance.")
+    return {
+      success: false,
+      message: "Error al actualizar avance: El ID del cliente es requerido y debe ser una cadena válida.",
+    }
+  }
+  if (!fecha || typeof fecha !== "string" || fecha.trim() === "") {
+    console.error("Error: fecha es nulo o inválido para updateAvance.")
+    return { success: false, message: "Error al actualizar avance: La fecha es requerida." }
+  }
+  if (!descripcion || typeof descripcion !== "string" || descripcion.trim() === "") {
+    console.error("Error: descripcion es nulo o inválido para updateAvance.")
+    return { success: false, message: "Error al actualizar avance: La descripción es requerida." }
+  }
+  if (porcentaje_avance === undefined || porcentaje_avance === null || isNaN(Number(porcentaje_avance))) {
+    console.error("Error: porcentaje_avance es nulo o inválido para updateAvance.")
+    return {
+      success: false,
+      message: "Error al actualizar avance: El porcentaje de avance es requerido y debe ser un número.",
+    }
+  }
+
   const supabase = createClient()
-  const id = data.id as string
-  const cliente_id = data.cliente_id as string // Necesario para revalidar la ruta
   const updatedAvance: TablesUpdate<"avances_proyecto"> = {
-    fecha: data.fecha as string,
-    descripcion: data.descripcion as string,
-    porcentaje_avance: Number.parseFloat(data.porcentaje_avance as any),
-    comentarios_cliente: data.comentarios_cliente as string,
+    fecha: fecha as string,
+    descripcion: descripcion as string,
+    porcentaje_avance: Number.parseFloat(porcentaje_avance as any),
+    comentarios_cliente: comentarios_cliente as string,
   }
 
   const { error } = await supabase.from("avances_proyecto").update(updatedAvance).eq("id", id)
@@ -74,13 +126,33 @@ export async function addAlcance(prevState: any, data: Partial<TablesInsert<"alc
   console.log("--- Server Action: addAlcance called ---")
   console.log("Server: Received data:", data)
 
+  const { cliente_id, nombre_modulo, descripcion, fecha_implementacion, estado } = data
+
+  if (!cliente_id || typeof cliente_id !== "string" || cliente_id.trim() === "") {
+    console.error("Error: cliente_id es nulo o inválido para addAlcance.")
+    return {
+      success: false,
+      message: "Error al añadir alcance: El ID del cliente es requerido y debe ser una cadena válida.",
+    }
+  }
+  if (!nombre_modulo || typeof nombre_modulo !== "string" || nombre_modulo.trim() === "") {
+    console.error("Error: nombre_modulo es nulo o inválido para addAlcance.")
+    return { success: false, message: "Error al añadir alcance: El nombre del módulo es requerido." }
+  }
+  if (!descripcion || typeof descripcion !== "string" || descripcion.trim() === "") {
+    console.error("Error: descripcion es nulo o inválido para addAlcance.")
+    return { success: false, message: "Error al añadir alcance: La descripción es requerida." }
+  }
+  // Estado es opcional en el tipo Insert, pero si la DB lo requiere, se debe manejar.
+  // Por ahora, no lo validamos aquí si el tipo lo permite.
+
   const supabase = createClient()
   const newAlcance: TablesInsert<"alcances_desarrollo"> = {
-    cliente_id: data.cliente_id as string,
-    nombre_modulo: data.nombre_modulo as string,
-    descripcion: data.descripcion as string,
-    fecha_implementacion: data.fecha_implementacion as string,
-    estado: data.estado as string,
+    cliente_id: cliente_id as string,
+    nombre_modulo: nombre_modulo as string,
+    descripcion: descripcion as string,
+    fecha_implementacion: fecha_implementacion as string,
+    estado: estado as string,
   }
 
   const { error } = await supabase.from("alcances_desarrollo").insert(newAlcance)
@@ -101,14 +173,34 @@ export async function updateAlcance(
   console.log("--- Server Action: updateAlcance called ---")
   console.log("Server: Received data:", data)
 
+  const { id, cliente_id, nombre_modulo, descripcion, fecha_implementacion, estado } = data
+
+  if (!id || typeof id !== "string" || id.trim() === "") {
+    console.error("Error: ID es nulo o inválido para updateAlcance.")
+    return { success: false, message: "Error al actualizar alcance: El ID del alcance es requerido." }
+  }
+  if (!cliente_id || typeof cliente_id !== "string" || cliente_id.trim() === "") {
+    console.error("Error: cliente_id es nulo o inválido para updateAlcance.")
+    return {
+      success: false,
+      message: "Error al actualizar alcance: El ID del cliente es requerido y debe ser una cadena válida.",
+    }
+  }
+  if (!nombre_modulo || typeof nombre_modulo !== "string" || nombre_modulo.trim() === "") {
+    console.error("Error: nombre_modulo es nulo o inválido para updateAlcance.")
+    return { success: false, message: "Error al actualizar alcance: El nombre del módulo es requerido." }
+  }
+  if (!descripcion || typeof descripcion !== "string" || descripcion.trim() === "") {
+    console.error("Error: descripcion es nulo o inválido para updateAlcance.")
+    return { success: false, message: "Error al actualizar alcance: La descripción es requerida." }
+  }
+
   const supabase = createClient()
-  const id = data.id as string
-  const cliente_id = data.cliente_id as string // Necesario para revalidar la ruta
   const updatedAlcance: TablesUpdate<"alcances_desarrollo"> = {
-    nombre_modulo: data.nombre_modulo as string,
-    descripcion: data.descripcion as string,
-    fecha_implementacion: data.fecha_implementacion as string,
-    estado: data.estado as string,
+    nombre_modulo: nombre_modulo as string,
+    descripcion: descripcion as string,
+    fecha_implementacion: fecha_implementacion as string,
+    estado: estado as string,
   }
 
   const { error } = await supabase.from("alcances_desarrollo").update(updatedAlcance).eq("id", id)
@@ -133,4 +225,26 @@ export async function deleteAlcance(id: string, cliente_id: string) {
 
   revalidatePath(`/clients/${cliente_id}`)
   return { success: true, message: "Alcance eliminado exitosamente." }
+}
+
+export async function getAvancesByClientId(id: string) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("avances_proyecto")
+    .select("*")
+    .eq("cliente_id", id)
+    .order("fecha", { ascending: false })
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function getAlcancesByClientId(id: string) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("alcances_desarrollo")
+    .select("*")
+    .eq("cliente_id", id)
+    .order("fecha_implementacion", { ascending: false })
+  if (error) throw new Error(error.message)
+  return data
 }

@@ -1,55 +1,51 @@
 "use client"
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Edit, Trash } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import TransactionForm from "@/components/transaction-form" // Importación por defecto
-import { deleteTransaction } from "@/actions/transaction-actions"
-import { toast } from "@/components/ui/use-toast"
 import { useState } from "react"
-import type { Tables } from "@/lib/database.types"
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { MoreHorizontalIcon } from "lucide-react"
+import { TransactionForm } from "@/components/transaction-form" // Corrected import
+import { DeleteTransactionButton } from "@/components/delete-transaction-button" // Assuming this component exists
+import { formatCurrency } from "@/lib/utils" // Assuming this utility exists
+import type { Database } from "@/lib/database.types"
+
+type Transaction = Database["public"]["Tables"]["transacciones"]["Row"]
 
 interface TransactionTableProps {
-  transactions: Tables<"transacciones">[]
+  transactions: Transaction[]
 }
 
 export function TransactionTable({ transactions }: TransactionTableProps) {
-  // Exportado como named export
-  const [openDialog, setOpenDialog] = useState(false)
-  const [selectedTransaction, setSelectedTransaction] = useState<Tables<"transacciones"> | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null)
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("¿Estás seguro de que quieres eliminar esta transacción?")) {
-      const result = await deleteTransaction(id)
-      if (result.success) {
-        toast({
-          title: "Éxito",
-          description: result.message,
-          variant: "default",
-        })
-      } else {
-        toast({
-          title: "Error",
-          description: result.message,
-          variant: "destructive",
-        })
-      }
-    }
+  const handleEdit = (transaction: Transaction) => {
+    setCurrentTransaction(transaction)
+    setIsFormOpen(true)
   }
 
-  const handleEditClick = (transaction: Tables<"transacciones">) => {
-    setSelectedTransaction(transaction)
-    setOpenDialog(true)
-  }
-
-  const handleFormSuccess = () => {
-    setOpenDialog(false)
-    setSelectedTransaction(null)
+  const handleAdd = () => {
+    setCurrentTransaction(null)
+    setIsFormOpen(true)
   }
 
   return (
-    <>
+    <div className="w-full">
+      <div className="flex justify-end mb-4">
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={handleAdd}>Añadir Transacción</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>{currentTransaction ? "Editar Transacción" : "Añadir Nueva Transacción"}</DialogTitle>
+            </DialogHeader>
+            <TransactionForm initialData={currentTransaction || undefined} onSuccess={() => setIsFormOpen(false)} />
+          </DialogContent>
+        </Dialog>
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
@@ -58,67 +54,49 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
             <TableHead>Monto</TableHead>
             <TableHead>Fecha</TableHead>
             <TableHead>Cuenta</TableHead>
-            <TableHead>Detalle</TableHead>
             <TableHead>Cliente</TableHead>
-            <TableHead>Tipo Ingreso/Egreso</TableHead>
+            <TableHead>Categoría</TableHead>
             <TableHead>Vendedor</TableHead>
             <TableHead>Comisión</TableHead>
-            <TableHead>Acciones</TableHead>
+            <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {transactions.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={11} className="text-center text-muted-foreground">
-                No hay transacciones registradas.
+          {transactions.map((transaction) => (
+            <TableRow key={transaction.id}>
+              <TableCell>{transaction.tipo}</TableCell>
+              <TableCell>{transaction.concepto}</TableCell>
+              <TableCell className={transaction.tipo === "ingreso" ? "text-green-600" : "text-red-600"}>
+                {formatCurrency(transaction.monto || 0)}
+              </TableCell>
+              <TableCell>{new Date(transaction.fecha).toLocaleDateString()}</TableCell>
+              <TableCell>{transaction.cuenta_id}</TableCell> {/* This should ideally show account name */}
+              <TableCell>{transaction.cliente_id}</TableCell> {/* This should ideally show client name */}
+              <TableCell>
+                {transaction.tipo === "ingreso" ? transaction.tipo_ingreso : transaction.tipo_egreso}
+              </TableCell>
+              <TableCell>{transaction.vendedor_comision}</TableCell>
+              <TableCell>{formatCurrency(transaction.comision_aplicada || 0)}</TableCell>
+              <TableCell className="text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Abrir menú</span>
+                      <MoreHorizontalIcon className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEdit(transaction)}>Editar</DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <DeleteTransactionButton transactionId={transaction.id} />
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
-          ) : (
-            transactions.map((transaction) => (
-              <TableRow key={transaction.id}>
-                <TableCell>{transaction.tipo}</TableCell>
-                <TableCell>${transaction.monto?.toFixed(2)}</TableCell>
-                <TableCell>{new Date(transaction.fecha).toLocaleDateString()}</TableCell>
-                <TableCell>{transaction.cuenta_id}</TableCell>
-                <TableCell>{transaction.detalle || "N/A"}</TableCell>
-                <TableCell>{(transaction as any).clientes?.cliente || "N/A"}</TableCell>
-                <TableCell>{transaction.tipo_ingreso || transaction.tipo_egreso || "N/A"}</TableCell>
-                <TableCell>{transaction.vendedor_comision || "N/A"}</TableCell>
-                <TableCell>${transaction.comision_aplicada?.toFixed(2) || "0.00"}</TableCell>
-                <TableCell className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handleEditClick(transaction)}
-                  >
-                    <Edit className="h-4 w-4" />
-                    <span className="sr-only">Editar</span>
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handleDelete(transaction.id)}
-                  >
-                    <Trash className="h-4 w-4" />
-                    <span className="sr-only">Eliminar</span>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
+          ))}
         </TableBody>
       </Table>
-
-      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>{selectedTransaction ? "Editar Transacción" : "Añadir Transacción"}</DialogTitle>
-          </DialogHeader>
-          <TransactionForm initialData={selectedTransaction || undefined} onSuccess={handleFormSuccess} />
-        </DialogContent>
-      </Dialog>
-    </>
+    </div>
   )
 }

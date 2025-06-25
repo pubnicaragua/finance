@@ -1,39 +1,47 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server" // Importar el cliente de servidor
-import { revalidatePath } from "next/cache" // Para revalidar la caché y actualizar el frontend
-import type { Tables } from "@/lib/database.types"
+import { revalidatePath } from "next/cache"
+import { createClient } from "@/lib/supabase/server"
+import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
 
-export async function addPartnership(prevState: any, data: Partial<Tables<"partnerships">>) {
-  console.log("--- Server Action: addPartnership called ---")
-  console.log("Server: Received data:", data)
-
+export async function addPartnership(prevState: any, formData: FormData) {
   const supabase = createClient()
-  const { data: newPartnership, error } = await supabase
-    .from("partnerships")
-    .insert([data as Tables<"partnerships">])
-    .select()
+  const newPartnership: TablesInsert<"partnerships"> = {
+    nombre: formData.get("nombre") as string,
+    tipo_acuerdo: formData.get("tipo_acuerdo") as string,
+    estado: formData.get("estado") as string,
+    monto_financiado: Number.parseFloat(formData.get("monto_financiado") as string),
+    fecha_inicio: formData.get("fecha_inicio") as string,
+    fecha_fin: formData.get("fecha_fin") as string,
+    responsabilidades: [], // Inicializar como JSON vacío o array vacío
+    expectativas: [], // Inicializar como JSON vacío o array vacío
+    historial_interacciones: [], // Inicializar como JSON vacío o array vacío
+  }
+
+  const { error } = await supabase.from("partnerships").insert(newPartnership)
 
   if (error) {
-    console.error("Error creating partnership:", error)
+    console.error("Error adding partnership:", error)
     return { success: false, message: `Error al añadir partnership: ${error.message}` }
   }
 
-  revalidatePath("/partnerships") // Revalidar la página de partnerships
-  return { success: true, message: "Partnership añadido exitosamente.", data: newPartnership[0] }
+  revalidatePath("/partnerships")
+  return { success: true, message: "Partnership añadido exitosamente." }
 }
 
-export async function updatePartnership(prevState: any, data: Partial<Tables<"partnerships">> & { id: string }) {
-  console.log("--- Server Action: updatePartnership called ---")
-  console.log("Server: Received data:", data)
-
-  const { id, ...updateData } = data
+export async function updatePartnership(prevState: any, formData: FormData) {
   const supabase = createClient()
-  const { data: updatedPartnership, error } = await supabase
-    .from("partnerships")
-    .update(updateData)
-    .eq("id", id)
-    .select()
+  const id = formData.get("id") as string
+  const updatedPartnership: TablesUpdate<"partnerships"> = {
+    nombre: formData.get("nombre") as string,
+    tipo_acuerdo: formData.get("tipo_acuerdo") as string,
+    estado: formData.get("estado") as string,
+    monto_financiado: Number.parseFloat(formData.get("monto_financiado") as string),
+    fecha_inicio: formData.get("fecha_inicio") as string,
+    fecha_fin: formData.get("fecha_fin") as string,
+  }
+
+  const { error } = await supabase.from("partnerships").update(updatedPartnership).eq("id", id)
 
   if (error) {
     console.error("Error updating partnership:", error)
@@ -41,7 +49,7 @@ export async function updatePartnership(prevState: any, data: Partial<Tables<"pa
   }
 
   revalidatePath("/partnerships")
-  return { success: true, message: "Partnership actualizado exitosamente.", data: updatedPartnership[0] }
+  return { success: true, message: "Partnership actualizado exitosamente." }
 }
 
 export async function deletePartnership(id: string) {

@@ -1,143 +1,133 @@
 "use client"
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Plus, Edit, Trash2 } from "lucide-react"
-import { PaymentForm } from "@/components/payment-form"
+import { PaymentForm } from "./payment-form"
+import { TrashIcon, PencilIcon } from "lucide-react"
 import { deletePayment } from "@/actions/payment-projection-actions"
-import { useState } from "react"
+import { useToast } from "@/hooks/use-toast"
+import type { Tables } from "@/lib/database.types"
 
 interface PaymentHistoryCardProps {
+  historialPagos: Tables<"clientes">["historial_pagos"]
   clienteId: string
-  payments: Array<{ fecha: string; monto: number; descripcion?: string }> // Cambiado a 'payments'
+  onPaymentUpdated: (message: string) => void
 }
 
-export function PaymentHistoryCard({ clienteId, payments }: PaymentHistoryCardProps) {
-  const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false)
-  const [isEditPaymentDialogOpen, setIsEditPaymentDialogOpen] = useState<{
-    open: boolean
-    data: { fecha: string; monto: number; descripcion?: string; index: number } | null
-  }>({ open: false, data: null })
+export function PaymentHistoryCard({ historialPagos, clienteId, onPaymentUpdated }: PaymentHistoryCardProps) {
+  const { toast } = useToast()
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [paymentToDelete, setPaymentToDelete] = useState<{ index: number; monto: number } | null>(null)
+
+  const handleDeleteClick = (index: number, monto: number) => {
+    setPaymentToDelete({ index, monto })
+    setIsDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (paymentToDelete !== null) {
+      const { success, message } = await deletePayment(clienteId, paymentToDelete.index)
+      if (success) {
+        onPaymentUpdated(message)
+        toast({
+          title: "Éxito",
+          description: message,
+          variant: "default",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: message,
+          variant: "destructive",
+        })
+      }
+      setIsDeleteDialogOpen(false)
+      setPaymentToDelete(null)
+    }
+  }
+
+  const totalAbonado = historialPagos?.reduce((sum, payment) => sum + (payment?.monto || 0), 0) || 0
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Historial de Pagos</CardTitle>
-        <Dialog open={isAddPaymentDialogOpen} onOpenChange={setIsAddPaymentDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Añadir Pago
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Añadir Nuevo Pago</DialogTitle>
-            </DialogHeader>
-            <PaymentForm clienteId={clienteId} onSuccess={() => setIsAddPaymentDialogOpen(false)} />
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Monto</TableHead>
-                <TableHead>Descripción</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.length === 0 ? ( // Usando 'payments'
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    No hay historial de pagos.
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">
+          Total Abonado: <span className="text-green-600">${totalAbonado.toFixed(2)}</span>
+        </h3>
+      </div>
+      <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Fecha</TableHead>
+              <TableHead>Monto</TableHead>
+              <TableHead>Descripción</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {historialPagos && historialPagos.length > 0 ? (
+              historialPagos.map((payment, index) => (
+                <TableRow key={index}>
+                  <TableCell>{payment?.fecha}</TableCell>
+                  <TableCell>${payment?.monto?.toFixed(2)}</TableCell>
+                  <TableCell>{payment?.descripcion}</TableCell>
+                  <TableCell className="text-right">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="mr-2">
+                          <PencilIcon className="h-4 w-4" />
+                          <span className="sr-only">Editar</span>
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Editar Pago</DialogTitle>
+                        </DialogHeader>
+                        <PaymentForm
+                          clienteId={clienteId}
+                          initialData={{ ...payment, index }}
+                          onSuccess={onPaymentUpdated}
+                        />
+                      </DialogContent>
+                    </Dialog>
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(index, payment?.monto || 0)}>
+                      <TrashIcon className="h-4 w-4" />
+                      <span className="sr-only">Eliminar</span>
+                    </Button>
                   </TableCell>
                 </TableRow>
-              ) : (
-                payments.map(
-                  (
-                    pago,
-                    index, // Usando 'payments'
-                  ) => (
-                    <TableRow key={index}>
-                      <TableCell>{pago.fecha}</TableCell>
-                      <TableCell className="text-green-amount">USD {pago.monto?.toFixed(2)}</TableCell>
-                      <TableCell>{pago.descripcion || "N/A"}</TableCell>
-                      <TableCell className="flex gap-2">
-                        <Dialog
-                          open={isEditPaymentDialogOpen.open && isEditPaymentDialogOpen.data?.index === index}
-                          onOpenChange={(open) =>
-                            setIsEditPaymentDialogOpen({ open, data: open ? { ...pago, index } : null })
-                          }
-                        >
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="icon" className="h-8 w-8">
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">Editar Pago</span>
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[425px]">
-                            <DialogHeader>
-                              <DialogTitle>Editar Pago</DialogTitle>
-                            </DialogHeader>
-                            <PaymentForm
-                              clienteId={clienteId}
-                              initialData={{ ...pago, index }}
-                              onSuccess={() => setIsEditPaymentDialogOpen({ open: false, data: null })}
-                            />
-                          </DialogContent>
-                        </Dialog>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="icon" className="h-8 w-8">
-                              <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Eliminar Pago</span>
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Esto eliminará permanentemente este pago.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={async () => {
-                                  await deletePayment(clienteId, index)
-                                }}
-                              >
-                                Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TableCell>
-                    </TableRow>
-                  ),
-                )
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center">
+                  No hay pagos registrados.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Eliminación</DialogTitle>
+          </DialogHeader>
+          <p>¿Estás seguro de que quieres eliminar este pago de ${paymentToDelete?.monto?.toFixed(2)}?</p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Eliminar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }

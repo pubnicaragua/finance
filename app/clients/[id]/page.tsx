@@ -1,89 +1,192 @@
-import { createClient } from "@/lib/supabase/server"
+"use client"
+
 import { notFound } from "next/navigation"
-import { ClientDetailHeader } from "@/components/client-detail-header"
+import { Suspense } from "react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ClientInfoCard } from "@/components/client-info-card"
 import { AvancesCard } from "@/components/avances-card"
 import { AlcancesCard } from "@/components/alcances-card"
 import { PaymentHistoryCard } from "@/components/payment-history-card"
 import { ProjectionHistoryCard } from "@/components/projection-history-card"
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PaymentForm } from "@/components/payment-form"
+import { ProjectionForm } from "@/components/projection-form"
+import { AvanceForm } from "@/components/avance-form"
+import { AlcanceForm } from "@/components/alcance-form"
+import { getClientById } from "@/actions/client-actions"
+import { getPaymentsByClientId } from "@/actions/payment-projection-actions"
+import { getAvancesByClientId } from "@/actions/project-updates-actions"
+import { getAlcancesByClientId } from "@/actions/project-updates-actions"
+import { getProjectionsByClientId } from "@/actions/payment-projection-actions"
+import { useToast } from "@/hooks/use-toast"
+import { useEffect, useState } from "react"
 
-interface Params {
-  id: string
-}
+export default function ClientDetailPage({ params }: { params: { id: string } }) {
+  const { id: clientId } = params
+  const { toast } = useToast()
+  const [client, setClient] = useState<any>(null)
+  const [payments, setPayments] = useState<any[]>([])
+  const [projections, setProjections] = useState<any[]>([])
+  const [avances, setAvances] = useState<any[]>([])
+  const [alcances, setAlcances] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-export default async function ClientPage({ params }: { params: Params }) {
-  const { id } = params
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true)
+      setError(null)
+      try {
+        const clientData = await getClientById(clientId)
+        if (!clientData) {
+          notFound()
+        }
+        setClient(clientData)
 
-  const supabase = await createClient()
+        const paymentsData = await getPaymentsByClientId(clientId)
+        setPayments(paymentsData || [])
 
-  // Fetch client details
-  const { data: client, error: clientError } = await supabase.from("clientes").select("*").eq("id", id).single()
+        const projectionsData = await getProjectionsByClientId(clientId)
+        setProjections(projectionsData || [])
 
-  // Fetch related advances
-  const { data: avances, error: avancesError } = await supabase
-    .from("avances_proyecto")
-    .select("*")
-    .eq("cliente_id", id)
-    .order("fecha", { ascending: false })
+        const avancesData = await getAvancesByClientId(clientId)
+        setAvances(avancesData || [])
 
-  // Fetch related scopes
-  const { data: alcances, error: alcancesError } = await supabase
-    .from("alcances_desarrollo")
-    .select("*")
-    .eq("cliente_id", id)
-    .order("fecha_implementacion", { ascending: false })
+        const alcancesData = await getAlcancesByClientId(clientId)
+        setAlcances(alcancesData || [])
+      } catch (err) {
+        console.error("Failed to fetch client data:", err)
+        setError("Failed to load client data. Please try again.")
+        toast({
+          title: "Error",
+          description: "No se pudo cargar la información del cliente.",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [clientId, toast])
 
-  if (clientError || !client) {
-    console.error("Error fetching client:", clientError)
+  if (loading) {
+    return <div className="flex justify-center items-center min-h-screen">Cargando...</div>
+  }
+
+  if (error) {
+    return <div className="flex justify-center items-center min-h-screen text-red-500">{error}</div>
+  }
+
+  if (!client) {
     return notFound()
   }
 
-  if (avancesError) {
-    console.error("Error fetching advances:", avancesError)
-    // Decide how to handle this: show partial data or error
-  }
-
-  if (alcancesError) {
-    console.error("Error fetching scopes:", alcancesError)
-    // Decide how to handle this: show partial data or error
-  }
-
-  // Ensure historial_pagos and proyeccion_pagos are arrays
-  const historialPagos = (client.historial_pagos || []) as Array<any>
-  const proyeccionPagos = (client.proyeccion_pagos || []) as Array<any>
-
   return (
-    <SidebarInset>
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
-        <h1 className="text-lg font-semibold">Detalles del Cliente</h1>
-      </header>
-      <main className="flex flex-1 flex-col gap-4 p-4">
-        <ClientDetailHeader client={client} />
+    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-950 p-4 sm:p-6 lg:p-8">
+      <ClientInfoCard client={client} />
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <ClientInfoCard client={client} />
-          <AvancesCard avances={avances || []} clientId={client.id} />
-          <AlcancesCard alcances={alcances || []} clientId={client.id} />
-        </div>
-
-        <Tabs defaultValue="payment-history" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="payment-history">Historial de Pagos</TabsTrigger>
-            <TabsTrigger value="payment-projections">Proyecciones de Pagos</TabsTrigger>
-          </TabsList>
-          <TabsContent value="payment-history">
-            <PaymentHistoryCard payments={historialPagos} clienteId={client.id} /> {/* Prop 'payments' */}
-          </TabsContent>
-          <TabsContent value="payment-projections">
-            <ProjectionHistoryCard projections={proyeccionPagos} clienteId={client.id} /> {/* Prop 'projections' */}
-          </TabsContent>
-        </Tabs>
-      </main>
-    </SidebarInset>
+      <Tabs defaultValue="payments" className="w-full mt-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="payments">Pagos</TabsTrigger>
+          <TabsTrigger value="projections">Proyecciones</TabsTrigger>
+          <TabsTrigger value="avances">Avances</TabsTrigger>
+          <TabsTrigger value="alcances">Alcances</TabsTrigger>
+        </TabsList>
+        <TabsContent value="payments" className="mt-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Historial de Pagos</CardTitle>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm">Añadir Pago</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Añadir Nuevo Pago</DialogTitle>
+                  </DialogHeader>
+                  <PaymentForm clientId={clientId} />
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<div>Cargando historial de pagos...</div>}>
+                <PaymentHistoryCard payments={payments} clientId={clientId} />
+              </Suspense>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="projections" className="mt-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Proyecciones de Pagos</CardTitle>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm">Añadir Proyección</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Añadir Nueva Proyección</DialogTitle>
+                  </DialogHeader>
+                  <ProjectionForm clientId={clientId} />
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<div>Cargando proyecciones...</div>}>
+                <ProjectionHistoryCard projections={projections} clientId={clientId} />
+              </Suspense>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="avances" className="mt-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Avances del Proyecto</CardTitle>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm">Añadir Avance</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Añadir Nuevo Avance</DialogTitle>
+                  </DialogHeader>
+                  <AvanceForm clientId={clientId} />
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<div>Cargando avances...</div>}>
+                <AvancesCard avances={avances} clientId={clientId} />
+              </Suspense>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="alcances" className="mt-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Alcances de Desarrollo</CardTitle>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm">Añadir Alcance</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Añadir Nuevo Alcance</DialogTitle>
+                  </DialogHeader>
+                  <AlcanceForm clientId={clientId} />
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<div>Cargando alcances...</div>}>
+                <AlcancesCard alcances={alcances} clientId={clientId} />
+              </Suspense>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }

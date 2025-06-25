@@ -1,35 +1,47 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server" // Importar el cliente de servidor
-import { revalidatePath } from "next/cache" // Para revalidar la caché y actualizar el frontend
-import type { Tables } from "@/lib/database.types"
+import { revalidatePath } from "next/cache"
+import { createClient } from "@/lib/supabase/server"
+import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
 
-export async function addLead(prevState: any, data: Partial<Tables<"leads">>) {
-  console.log("--- Server Action: addLead called ---")
-  console.log("Server: Received data:", data)
-
+export async function addLead(prevState: any, formData: FormData) {
   const supabase = createClient()
-  const { data: newLead, error } = await supabase
-    .from("leads")
-    .insert([data as Tables<"leads">])
-    .select()
+  const newLead: TablesInsert<"leads"> = {
+    cliente: formData.get("cliente") as string,
+    proyecto: formData.get("proyecto") as string,
+    estado: formData.get("estado") as string,
+    proyeccion_usd: Number.parseFloat(formData.get("proyeccion_usd") as string),
+    canal_contacto: formData.get("canal_contacto") as string,
+    fecha_ultimo_contacto: formData.get("fecha_ultimo_contacto") as string,
+    tipo_software: formData.get("tipo_software") as string,
+    seguimiento: [], // Inicializar como JSON vacío o array vacío
+  }
+
+  const { error } = await supabase.from("leads").insert(newLead)
 
   if (error) {
-    console.error("Error creating lead:", error)
+    console.error("Error adding lead:", error)
     return { success: false, message: `Error al añadir lead: ${error.message}` }
   }
 
-  revalidatePath("/leads") // Revalidar la página de leads
-  return { success: true, message: "Lead añadido exitosamente.", data: newLead[0] }
+  revalidatePath("/leads")
+  return { success: true, message: "Lead añadido exitosamente." }
 }
 
-export async function updateLead(prevState: any, data: Partial<Tables<"leads">> & { id: string }) {
-  console.log("--- Server Action: updateLead called ---")
-  console.log("Server: Received data:", data)
-
-  const { id, ...updateData } = data
+export async function updateLead(prevState: any, formData: FormData) {
   const supabase = createClient()
-  const { data: updatedLead, error } = await supabase.from("leads").update(updateData).eq("id", id).select()
+  const id = formData.get("id") as string
+  const updatedLead: TablesUpdate<"leads"> = {
+    cliente: formData.get("cliente") as string,
+    proyecto: formData.get("proyecto") as string,
+    estado: formData.get("estado") as string,
+    proyeccion_usd: Number.parseFloat(formData.get("proyeccion_usd") as string),
+    canal_contacto: formData.get("canal_contacto") as string,
+    fecha_ultimo_contacto: formData.get("fecha_ultimo_contacto") as string,
+    tipo_software: formData.get("tipo_software") as string,
+  }
+
+  const { error } = await supabase.from("leads").update(updatedLead).eq("id", id)
 
   if (error) {
     console.error("Error updating lead:", error)
@@ -37,7 +49,7 @@ export async function updateLead(prevState: any, data: Partial<Tables<"leads">> 
   }
 
   revalidatePath("/leads")
-  return { success: true, message: "Lead actualizado exitosamente.", data: updatedLead[0] }
+  return { success: true, message: "Lead actualizado exitosamente." }
 }
 
 export async function deleteLead(id: string) {

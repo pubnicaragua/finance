@@ -4,20 +4,31 @@
 import { cookies } from "next/headers"
 import { createServerClient } from "@supabase/ssr"
 
+// Forzamos la inclusión de la dependencia peer de supabase-js
+import "@supabase/storage-js"
+
 /**
  * Crea un cliente Supabase para uso exclusivo del servidor.
  * No incluyas este módulo en componentes "use client".
  */
 export function createClient() {
-  // Validación básica para evitar errores de typo en las env-vars
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  // --- VALIDATE ENV-VARS & CHOOSE THE RIGHT KEY ------------------------------
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!SUPABASE_URL || (!SERVICE_ROLE && !ANON_KEY)) {
     throw new Error(
-      "NEXT_PUBLIC_SUPABASE_URL y/o SUPABASE_SERVICE_ROLE_KEY no están definidas. " +
-        "Configúralas en tu .env.local y en Vercel.",
+      "Faltan variables de entorno Supabase.\n" +
+        "Requeridas: NEXT_PUBLIC_SUPABASE_URL y (SUPABASE_SERVICE_ROLE_KEY o NEXT_PUBLIC_SUPABASE_ANON_KEY).",
     )
   }
 
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+  // Escogemos Service Role cuando existe; si no, usamos la llave Anónima.
+  const SUPABASE_KEY = SERVICE_ROLE ?? ANON_KEY
+  // ---------------------------------------------------------------------------
+
+  return createServerClient(SUPABASE_URL, SUPABASE_KEY, {
     cookies: {
       get(name: string) {
         return cookies().get(name)?.value

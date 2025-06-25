@@ -1,43 +1,28 @@
-import { createServerSupabase } from "@/lib/supabase/server"
-import TransactionForm from "@/components/transaction-form" // Importación por defecto
-import { TransactionTable } from "./TransactionTable" // Importación nombrada
+"use client"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { PlusIcon } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
+import { PlusIcon } from "lucide-react"
+import { TransactionTable } from "./TransactionTable"
+import { TransactionForm } from "@/components/transaction-form" // Importación actualizada
+import type { Tables } from "@/lib/database.types"
 
-export const revalidate = 0
+export default function TransactionsPage() {
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [editingTransaction, setEditingTransaction] = useState<Tables<"transacciones"> | null>(null)
 
-export default async function TransactionsPage() {
-  const supabase = createServerSupabase()
-  const { data: transactions, error } = await supabase
-    .from("transacciones")
-    .select("*")
-    .order("fecha", { ascending: false })
+  const handleSuccess = () => {
+    setIsFormOpen(false)
+    setEditingTransaction(null)
+    // Revalidar datos si es necesario, aunque las Server Actions ya lo hacen
+  }
 
-  if (error) {
-    console.error("Error fetching transactions:", error)
-    return (
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <h1 className="text-lg font-semibold">Gestión de Transacciones</h1>
-        </header>
-        <main className="flex flex-1 flex-col gap-4 p-4">
-          <h2 className="text-2xl font-bold">Gestión de Transacciones</h2>
-          <p className="text-red-500">Error al cargar transacciones: {error.message}</p>
-        </main>
-      </SidebarInset>
-    )
+  const handleEdit = (transaction: Tables<"transacciones">) => {
+    setEditingTransaction(transaction)
+    setIsFormOpen(true)
   }
 
   return (
@@ -45,34 +30,30 @@ export default async function TransactionsPage() {
       <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
-        <h1 className="text-lg font-semibold">Gestión de Transacciones</h1>
-      </header>
-      <main className="flex flex-1 flex-col gap-4 p-4">
-        <h2 className="text-2xl font-bold">Gestión de Transacciones</h2>
-        <p className="text-muted-foreground">Registra y administra todas las transacciones financieras.</p>
-
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-semibold">Lista de Transacciones</h3>
-          <Dialog>
+        <h1 className="text-lg font-semibold">Transacciones</h1>
+        <div className="ml-auto flex items-center gap-2">
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="h-8 gap-1">
-                <PlusIcon className="h-4 w-4" />
-                <span className="sr-only sm:not-sr-only">Añadir Transacción</span>
+              <Button size="sm" className="h-8 gap-1" onClick={() => setEditingTransaction(null)}>
+                <PlusIcon className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Añadir Transacción</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
-                <DialogTitle>Añadir Nueva Transacción</DialogTitle>
-                <DialogDescription>
-                  Rellena los campos para añadir una nueva transacción a la base de datos.
-                </DialogDescription>
+                <DialogTitle>{editingTransaction ? "Editar Transacción" : "Añadir Transacción"}</DialogTitle>
               </DialogHeader>
-              <TransactionForm />
+              <TransactionForm
+                initialData={editingTransaction}
+                onSuccess={handleSuccess}
+                onCancel={() => setIsFormOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         </div>
-
-        <TransactionTable transactions={transactions || []} />
+      </header>
+      <main className="flex flex-1 flex-col gap-4 p-4">
+        <TransactionTable onEdit={handleEdit} />
       </main>
     </SidebarInset>
   )

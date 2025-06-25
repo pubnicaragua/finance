@@ -1,19 +1,17 @@
 "use client"
 
 import type React from "react"
-
-import { useActionState, useState, useEffect, startTransition } from "react"
+import { useActionState, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { addPartnership, updatePartnership } from "@/actions/partnership-actions"
 import type { Tables } from "@/lib/database.types"
 
 interface PartnershipFormProps {
-  initialData?: Tables<"partnerships"> | null
+  initialData?: Tables<"partnerships">
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -25,11 +23,11 @@ export function PartnershipForm({ initialData, onSuccess, onCancel }: Partnershi
   const { toast } = useToast()
 
   const [nombre, setNombre] = useState(initialData?.nombre || "")
-  const [contacto, setContacto] = useState(initialData?.contacto || "")
-  const [tipo, setTipo] = useState(initialData?.tipo || "")
-  const [descripcion, setDescripcion] = useState(initialData?.descripcion || "")
-  const [fechaInicio, setFechaInicio] = useState(initialData?.fecha_inicio || "")
+  const [tipoAcuerdo, setTipoAcuerdo] = useState(initialData?.tipo_acuerdo || "")
   const [estado, setEstado] = useState(initialData?.estado || "Activo")
+  const [montoFinanciado, setMontoFinanciado] = useState(initialData?.monto_financiado?.toString() || "")
+  const [fechaInicio, setFechaInicio] = useState(initialData?.fecha_inicio || "")
+  const [fechaFin, setFechaFin] = useState(initialData?.fecha_fin || "")
 
   useEffect(() => {
     if (state?.success) {
@@ -50,61 +48,60 @@ export function PartnershipForm({ initialData, onSuccess, onCancel }: Partnershi
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const data = {
-      nombre,
-      contacto,
-      tipo,
-      descripcion,
-      fecha_inicio: fechaInicio,
-      estado,
-      ...(isEditing && { id: initialData?.id }), // Añadir ID solo si estamos editando
+    const formData = new FormData(event.currentTarget)
+    if (isEditing && initialData?.id) {
+      formData.append("id", initialData.id)
     }
-    startTransition(() => {
-      formAction(data)
-    })
+    formAction(formData)
   }
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
       <div className="space-y-2">
-        <Label htmlFor="nombre">Nombre de la Asociación</Label>
+        <Label htmlFor="nombre">Nombre del Socio</Label>
         <Input
           id="nombre"
           name="nombre"
-          placeholder="Nombre de la asociación"
+          placeholder="Nombre del socio"
           required
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="contacto">Contacto</Label>
+        <Label htmlFor="tipo_acuerdo">Tipo de Acuerdo</Label>
         <Input
-          id="contacto"
-          name="contacto"
-          placeholder="Contacto de la asociación"
-          value={contacto}
-          onChange={(e) => setContacto(e.target.value)}
+          id="tipo_acuerdo"
+          name="tipo_acuerdo"
+          placeholder="Ej: Colaboración, Financiamiento"
+          value={tipoAcuerdo}
+          onChange={(e) => setTipoAcuerdo(e.target.value)}
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="tipo">Tipo de Asociación</Label>
-        <Input
-          id="tipo"
-          name="tipo"
-          placeholder="Ej: Proveedor, Cliente, Estratégico"
-          value={tipo}
-          onChange={(e) => setTipo(e.target.value)}
-        />
+        <Label htmlFor="estado">Estado</Label>
+        <Select name="estado" value={estado} onValueChange={setEstado}>
+          <SelectTrigger id="estado">
+            <SelectValue placeholder="Selecciona un estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Activo">Activo</SelectItem>
+            <SelectItem value="Inactivo">Inactivo</SelectItem>
+            <SelectItem value="Negociación">Negociación</SelectItem>
+            <SelectItem value="Completado">Completado</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="descripcion">Descripción</Label>
-        <Textarea
-          id="descripcion"
-          name="descripcion"
-          placeholder="Descripción de la asociación"
-          value={descripcion}
-          onChange={(e) => setDescripcion(e.target.value)}
+        <Label htmlFor="monto_financiado">Monto Financiado (USD)</Label>
+        <Input
+          id="monto_financiado"
+          name="monto_financiado"
+          type="number"
+          step="0.01"
+          placeholder="0.00"
+          value={montoFinanciado}
+          onChange={(e) => setMontoFinanciado(e.target.value)}
         />
       </div>
       <div className="space-y-2">
@@ -118,17 +115,14 @@ export function PartnershipForm({ initialData, onSuccess, onCancel }: Partnershi
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="estado">Estado</Label>
-        <Select name="estado" value={estado} onValueChange={setEstado}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecciona un estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Activo">Activo</SelectItem>
-            <SelectItem value="Inactivo">Inactivo</SelectItem>
-            <SelectItem value="Pendiente">Pendiente</SelectItem>
-          </SelectContent>
-        </Select>
+        <Label htmlFor="fecha_fin">Fecha de Fin</Label>
+        <Input
+          id="fecha_fin"
+          name="fecha_fin"
+          type="date"
+          value={fechaFin}
+          onChange={(e) => setFechaFin(e.target.value)}
+        />
       </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
@@ -140,8 +134,8 @@ export function PartnershipForm({ initialData, onSuccess, onCancel }: Partnershi
               ? "Actualizando..."
               : "Añadiendo..."
             : isEditing
-              ? "Actualizar Asociación"
-              : "Añadir Asociación"}
+              ? "Actualizar Partnership"
+              : "Añadir Partnership"}
         </Button>
       </div>
     </form>
