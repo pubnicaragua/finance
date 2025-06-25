@@ -14,7 +14,7 @@ export async function addLead(prevState: any, formData: FormData) {
     estado: formData.get("estado") as string,
     fecha_contacto: formData.get("fecha_contacto") as string,
     fuente: formData.get("fuente") as string,
-    comentarios: formData.get("comentarios") as string,
+    notas: formData.get("notas") as string, // CAMBIO: 'comentarios' a 'notas'
   }
 
   const { error } = await supabase.from("leads").insert(newLead)
@@ -39,7 +39,7 @@ export async function updateLead(prevState: any, formData: FormData) {
     estado: formData.get("estado") as string,
     fecha_contacto: formData.get("fecha_contacto") as string,
     fuente: formData.get("fuente") as string,
-    comentarios: formData.get("comentarios") as string,
+    notas: formData.get("notas") as string, // CAMBIO: 'comentarios' a 'notas'
   }
 
   const { error } = await supabase.from("leads").update(updatedLead).eq("id", id)
@@ -71,7 +71,7 @@ export async function getLeads() {
   const { data, error } = await supabase.from("leads").select("*").order("fecha_contacto", { ascending: false })
   if (error) {
     console.error("Error fetching leads:", error)
-    return [] // Asegurar que siempre devuelve un array
+    return []
   }
   return data || []
 }

@@ -132,14 +132,14 @@ export function LeadForm({ initialData, onSuccess, onCancel }: LeadFormProps) {
         />
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="comentarios" className="text-right">
-          Comentarios
+        <Label htmlFor="notas" className="text-right">
+          Notas
         </Label>
         <Textarea
-          id="comentarios"
-          name="comentarios"
+          id="notas"
+          name="notas"
           placeholder="Notas adicionales sobre el lead"
-          defaultValue={initialData?.comentarios || ""}
+          defaultValue={initialData?.notas || ""} // CAMBIO: 'comentarios' a 'notas'
           className="col-span-3"
         />
       </div>

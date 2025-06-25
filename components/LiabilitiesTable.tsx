@@ -1,76 +1,87 @@
 "use client"
 
+import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { DataTable } from "@/components/ui/data-table"
-import { deletePasivoCorriente } from "@/actions/asset-liability-actions"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { MoreHorizontal } from "lucide-react"
+import { DataTable } from "@/components/ui/data-table" // Asegúrate de que este componente exista
+import { deleteCurrentLiability } from "@/actions/asset-liability-actions" // Importar la Server Action
 import { useToast } from "@/hooks/use-toast"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { PasivoCorrienteForm } from "@/components/pasivo-corriente-form"
 import type { Tables } from "@/lib/database.types"
 
 interface LiabilitiesTableProps {
-  onEdit: (liability: Tables<"pasivos_corrientes">) => void
-  liabilities: Tables<"pasivos_corrientes">[] // Recibir liabilities como prop
+  liabilities: Tables<"pasivos_corrientes">[]
+  onLiabilityOperation: () => void // Callback para revalidar datos
 }
 
-export function LiabilitiesTable({ onEdit, liabilities }: LiabilitiesTableProps) {
+export function LiabilitiesTable({ liabilities, onLiabilityOperation }: LiabilitiesTableProps) {
   const { toast } = useToast()
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingLiability, setEditingLiability] = useState<Tables<"pasivos_corrientes"> | null>(null)
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("¿Estás seguro de que quieres eliminar este pasivo corriente?")) {
-      const { success, message } = await deletePasivoCorriente(id)
+    const result = await deleteCurrentLiability(id)
+    if (result.success) {
       toast({
-        title: success ? "Éxito" : "Error",
-        description: message,
-        variant: success ? "default" : "destructive",
+        title: "Éxito",
+        description: result.message,
+      })
+      onLiabilityOperation() // Revalidar datos
+    } else {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive",
       })
     }
   }
 
+  const handleEdit = (liability: Tables<"pasivos_corrientes">) => {
+    setEditingLiability(liability)
+    setIsEditDialogOpen(true)
+  }
+
+  const handleEditSuccess = () => {
+    setIsEditDialogOpen(false)
+    setEditingLiability(null)
+    onLiabilityOperation() // Revalidar datos
+  }
+
   const columns: ColumnDef<Tables<"pasivos_corrientes">>[] = [
     {
-      accessorKey: "descripcion",
-      header: "Descripción",
+      accessorKey: "nombre",
+      header: "Nombre",
+    },
+    {
+      accessorKey: "tipo",
+      header: "Tipo",
     },
     {
       accessorKey: "monto",
-      header: () => <div className="text-right">Monto</div>,
+      header: "Monto",
       cell: ({ row }) => {
         const amount = Number.parseFloat(row.getValue("monto"))
         const formatted = new Intl.NumberFormat("es-NI", {
           style: "currency",
-          currency: "NIO",
+          currency: "USD",
         }).format(amount)
-        return <div className="text-right font-medium">{formatted}</div>
+        return <div className="font-medium">{formatted}</div>
       },
     },
     {
       accessorKey: "fecha_vencimiento",
       header: "Fecha Vencimiento",
-      cell: ({ row }) => {
-        const date = new Date(row.getValue("fecha_vencimiento"))
-        return date.toLocaleDateString()
-      },
     },
     {
       accessorKey: "estado",
       header: "Estado",
     },
     {
-      accessorKey: "created_at",
-      header: "Fecha Creación",
-      cell: ({ row }) => {
-        const date = new Date(row.getValue("created_at"))
-        return date.toLocaleDateString()
-      },
+      accessorKey: "descripcion",
+      header: "Descripción",
     },
     {
       id: "actions",
@@ -86,9 +97,7 @@ export function LiabilitiesTable({ onEdit, liabilities }: LiabilitiesTableProps)
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => onEdit(liability)}>Editar</DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleEdit(liability)}>Editar</DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleDelete(liability.id)}>Eliminar</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -97,5 +106,21 @@ export function LiabilitiesTable({ onEdit, liabilities }: LiabilitiesTableProps)
     },
   ]
 
-  return <DataTable columns={columns} data={liabilities} />
+  return (
+    <>
+      <DataTable columns={columns} data={liabilities} />
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Editar Pasivo Corriente</DialogTitle>
+          </DialogHeader>
+          <PasivoCorrienteForm
+            initialData={editingLiability}
+            onSuccess={handleEditSuccess}
+            onCancel={() => setIsEditDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
+  )
 }

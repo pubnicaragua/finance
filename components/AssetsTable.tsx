@@ -1,88 +1,111 @@
 "use client"
 
+import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { DataTable } from "@/components/ui/data-table"
-import { deleteActivoNoCorriente } from "@/actions/asset-liability-actions"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { MoreHorizontal } from "lucide-react"
+import { DataTable } from "@/components/ui/data-table" // Asegúrate de que este componente exista
+import { deleteNonCurrentAsset } from "@/actions/asset-liability-actions" // Importar la Server Action
 import { useToast } from "@/hooks/use-toast"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ActivoNoCorrienteForm } from "@/components/activo-no-corriente-form"
 import type { Tables } from "@/lib/database.types"
 
 interface AssetsTableProps {
-  onEdit: (asset: Tables<"activos_no_corrientes">) => void
-  assets: Tables<"activos_no_corrientes">[] // Recibir assets como prop
+  assets: Tables<"activos_no_corrientes">[]
+  onAssetOperation: () => void // Callback para revalidar datos
 }
 
-export function AssetsTable({ onEdit, assets }: AssetsTableProps) {
+export function AssetsTable({ assets, onAssetOperation }: AssetsTableProps) {
   const { toast } = useToast()
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingAsset, setEditingAsset] = useState<Tables<"activos_no_corrientes"> | null>(null)
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("¿Estás seguro de que quieres eliminar este activo no corriente?")) {
-      const { success, message } = await deleteActivoNoCorriente(id)
+    const result = await deleteNonCurrentAsset(id)
+    if (result.success) {
       toast({
-        title: success ? "Éxito" : "Error",
-        description: message,
-        variant: success ? "default" : "destructive",
+        title: "Éxito",
+        description: result.message,
+      })
+      onAssetOperation() // Revalidar datos
+    } else {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive",
       })
     }
   }
 
+  const handleEdit = (asset: Tables<"activos_no_corrientes">) => {
+    setEditingAsset(asset)
+    setIsEditDialogOpen(true)
+  }
+
+  const handleEditSuccess = () => {
+    setIsEditDialogOpen(false)
+    setEditingAsset(null)
+    onAssetOperation() // Revalidar datos
+  }
+
   const columns: ColumnDef<Tables<"activos_no_corrientes">>[] = [
+    {
+      accessorKey: "nombre",
+      header: "Nombre",
+    },
+    {
+      accessorKey: "tipo",
+      header: "Tipo",
+    },
+    {
+      accessorKey: "monto",
+      header: "Monto",
+      cell: ({ row }) => {
+        const amount = Number.parseFloat(row.getValue("monto"))
+        const formatted = new Intl.NumberFormat("es-NI", {
+          style: "currency",
+          currency: "USD",
+        }).format(amount)
+        return <div className="font-medium">{formatted}</div>
+      },
+    },
+    {
+      accessorKey: "fecha_adquisicion",
+      header: "Fecha Adquisición",
+    },
+    {
+      accessorKey: "vida_util_anios",
+      header: "Vida Útil (Años)",
+    },
+    {
+      accessorKey: "valor_residual",
+      header: "Valor Residual",
+      cell: ({ row }) => {
+        const amount = Number.parseFloat(row.getValue("valor_residual"))
+        const formatted = new Intl.NumberFormat("es-NI", {
+          style: "currency",
+          currency: "USD",
+        }).format(amount)
+        return <div className="font-medium">{formatted}</div>
+      },
+    },
+    {
+      accessorKey: "depreciacion_acumulada",
+      header: "Depreciación Acumulada",
+      cell: ({ row }) => {
+        const amount = Number.parseFloat(row.getValue("depreciacion_acumulada"))
+        const formatted = new Intl.NumberFormat("es-NI", {
+          style: "currency",
+          currency: "USD",
+        }).format(amount)
+        return <div className="font-medium">{formatted}</div>
+      },
+    },
     {
       accessorKey: "descripcion",
       header: "Descripción",
-    },
-    {
-      accessorKey: "valor",
-      header: () => <div className="text-right">Valor</div>,
-      cell: ({ row }) => {
-        const amount = Number.parseFloat(row.getValue("valor"))
-        const formatted = new Intl.NumberFormat("es-NI", {
-          style: "currency",
-          currency: "NIO",
-        }).format(amount)
-        return <div className="text-right font-medium">{formatted}</div>
-      },
-    },
-    {
-      accessorKey: "depreciacion",
-      header: () => <div className="text-right">Depreciación</div>,
-      cell: ({ row }) => {
-        const amount = Number.parseFloat(row.getValue("depreciacion"))
-        const formatted = new Intl.NumberFormat("es-NI", {
-          style: "currency",
-          currency: "NIO",
-        }).format(amount)
-        return <div className="text-right font-medium">{formatted}</div>
-      },
-    },
-    {
-      accessorKey: "valor_neto",
-      header: () => <div className="text-right">Valor Neto</div>,
-      cell: ({ row }) => {
-        const amount = Number.parseFloat(row.getValue("valor_neto"))
-        const formatted = new Intl.NumberFormat("es-NI", {
-          style: "currency",
-          currency: "NIO",
-        }).format(amount)
-        return <div className="text-right font-medium">{formatted}</div>
-      },
-    },
-    {
-      accessorKey: "created_at",
-      header: "Fecha Creación",
-      cell: ({ row }) => {
-        const date = new Date(row.getValue("created_at"))
-        return date.toLocaleDateString()
-      },
     },
     {
       id: "actions",
@@ -98,9 +121,7 @@ export function AssetsTable({ onEdit, assets }: AssetsTableProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => onEdit(asset)}>Editar</DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleEdit(asset)}>Editar</DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleDelete(asset.id)}>Eliminar</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -109,5 +130,21 @@ export function AssetsTable({ onEdit, assets }: AssetsTableProps) {
     },
   ]
 
-  return <DataTable columns={columns} data={assets} />
+  return (
+    <>
+      <DataTable columns={columns} data={assets} />
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Editar Activo No Corriente</DialogTitle>
+          </DialogHeader>
+          <ActivoNoCorrienteForm
+            initialData={editingAsset}
+            onSuccess={handleEditSuccess}
+            onCancel={() => setIsEditDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
+  )
 }

@@ -17,18 +17,35 @@ export async function addTransaction(prevState: any, formData: FormData) {
   const comision_aplicada = Number.parseFloat(formData.get("comision_aplicada") as string)
 
   // Validaciones básicas para campos NOT NULL
-  if (!concepto) {
+  if (!concepto || concepto.trim() === "") {
     return { success: false, message: "Error al añadir transacción: El concepto es requerido." }
   }
-  if (!fecha) {
+  if (!fecha || fecha.trim() === "") {
     return { success: false, message: "Error al añadir transacción: La fecha es requerida." }
   }
   if (isNaN(monto)) {
-    return { success: false, message: "Error al añadir transacción: El monto es requerido." }
+    return { success: false, message: "Error al añadir transacción: El monto es requerido y debe ser un número." }
   }
-  if (!tipo) {
+  if (!tipo || tipo.trim() === "") {
     return { success: false, message: "Error al añadir transacción: El tipo de transacción es requerido." }
   }
+
+  // Lógica para asegurar que solo uno de tipo_ingreso/tipo_egreso esté presente
+  let tipo_ingreso_val: string | null = null
+  let tipo_egreso_val: string | null = null
+
+  if (tipo === "ingreso") {
+    if (!categoria || categoria.trim() === "") {
+      return { success: false, message: "Error al añadir transacción: La categoría es requerida para ingresos." }
+    }
+    tipo_ingreso_val = categoria
+  } else if (tipo === "egreso") {
+    if (!categoria || categoria.trim() === "") {
+      return { success: false, message: "Error al añadir transacción: La categoría es requerida para egresos." }
+    }
+    tipo_egreso_val = categoria
+  }
+  // Si tipo es 'transferencia' o cualquier otro, ambos serán null, lo cual es correcto.
 
   const newTransaction: TablesInsert<"transacciones"> = {
     concepto: concepto,
@@ -36,8 +53,8 @@ export async function addTransaction(prevState: any, formData: FormData) {
     monto: monto,
     tipo: tipo,
     detalle: descripcion,
-    tipo_ingreso: tipo === "ingreso" ? categoria : null, // Mapeo correcto
-    tipo_egreso: tipo === "egreso" ? categoria : null, // Mapeo correcto
+    tipo_ingreso: tipo_ingreso_val, // Mapeo correcto y validado
+    tipo_egreso: tipo_egreso_val, // Mapeo correcto y validado
     aplicar_comision: aplicar_comision,
     vendedor_comision: aplicar_comision ? vendedor_comision : null,
     comision_aplicada: aplicar_comision ? comision_aplicada : null,
@@ -72,20 +89,36 @@ export async function updateTransaction(prevState: any, formData: FormData) {
   const comision_aplicada = Number.parseFloat(formData.get("comision_aplicada") as string)
 
   // Validaciones básicas para campos NOT NULL
-  if (!id) {
+  if (!id || id.trim() === "") {
     return { success: false, message: "Error al actualizar transacción: El ID es requerido." }
   }
-  if (!concepto) {
+  if (!concepto || concepto.trim() === "") {
     return { success: false, message: "Error al actualizar transacción: El concepto es requerido." }
   }
-  if (!fecha) {
+  if (!fecha || fecha.trim() === "") {
     return { success: false, message: "Error al actualizar transacción: La fecha es requerida." }
   }
   if (isNaN(monto)) {
-    return { success: false, message: "Error al actualizar transacción: El monto es requerido." }
+    return { success: false, message: "Error al actualizar transacción: El monto es requerido y debe ser un número." }
   }
-  if (!tipo) {
+  if (!tipo || tipo.trim() === "") {
     return { success: false, message: "Error al actualizar transacción: El tipo de transacción es requerido." }
+  }
+
+  // Lógica para asegurar que solo uno de tipo_ingreso/tipo_egreso esté presente
+  let tipo_ingreso_val: string | null = null
+  let tipo_egreso_val: string | null = null
+
+  if (tipo === "ingreso") {
+    if (!categoria || categoria.trim() === "") {
+      return { success: false, message: "Error al actualizar transacción: La categoría es requerida para ingresos." }
+    }
+    tipo_ingreso_val = categoria
+  } else if (tipo === "egreso") {
+    if (!categoria || categoria.trim() === "") {
+      return { success: false, message: "Error al actualizar transacción: La categoría es requerida para egresos." }
+    }
+    tipo_egreso_val = categoria
   }
 
   const updatedTransaction: TablesUpdate<"transacciones"> = {
@@ -94,8 +127,8 @@ export async function updateTransaction(prevState: any, formData: FormData) {
     monto: monto,
     tipo: tipo,
     detalle: descripcion,
-    tipo_ingreso: tipo === "ingreso" ? categoria : null, // Mapeo correcto
-    tipo_egreso: tipo === "egreso" ? categoria : null, // Mapeo correcto
+    tipo_ingreso: tipo_ingreso_val, // Mapeo correcto y validado
+    tipo_egreso: tipo_egreso_val, // Mapeo correcto y validado
     aplicar_comision: aplicar_comision,
     vendedor_comision: aplicar_comision ? vendedor_comision : null,
     comision_aplicada: aplicar_comision ? comision_aplicada : null,
@@ -138,7 +171,7 @@ export async function getTransactions() {
   const { data, error } = await supabase.from("transacciones").select("*").order("fecha", { ascending: false })
   if (error) {
     console.error("Error fetching transactions:", error)
-    return [] // Devolver array vacío en caso de error
+    return []
   }
-  return data || [] // Asegurar que siempre sea un array
+  return data || []
 }
