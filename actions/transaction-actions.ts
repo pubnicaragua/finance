@@ -14,7 +14,8 @@ export async function addTransaction(prevState: any, formData: FormData) {
   const categoria = formData.get("categoria") as string // Esto se mapeará a tipo_ingreso/egreso
   const aplicar_comision = formData.get("aplicar_comision") === "on"
   const vendedor_comision = formData.get("vendedor_comision") as string
-  const comision_aplicada = Number.parseFloat(formData.get("comision_aplicada") as string)
+  const comision_aplicada_raw = formData.get("comision_aplicada") as string
+  const comision_aplicada = comision_aplicada_raw && comision_aplicada_raw.trim() !== "" ? Number.parseFloat(comision_aplicada_raw) : null
 
   // Validaciones básicas para campos NOT NULL
   if (!concepto || concepto.trim() === "") {
@@ -46,6 +47,11 @@ export async function addTransaction(prevState: any, formData: FormData) {
     tipo_egreso_val = categoria
   }
   // Si tipo es 'transferencia' o cualquier otro, ambos serán null, lo cual es correcto.
+
+  // Validación adicional para comisión
+  if (aplicar_comision && (comision_aplicada === null || isNaN(comision_aplicada))) {
+    return { success: false, message: "Error al añadir transacción: La comisión aplicada debe ser un número válido cuando se aplica comisión." }
+  }
 
   const newTransaction: TablesInsert<"transacciones"> = {
     concepto: concepto,
@@ -86,7 +92,8 @@ export async function updateTransaction(prevState: any, formData: FormData) {
   const categoria = formData.get("categoria") as string // Esto se mapeará a tipo_ingreso/egreso
   const aplicar_comision = formData.get("aplicar_comision") === "on"
   const vendedor_comision = formData.get("vendedor_comision") as string
-  const comision_aplicada = Number.parseFloat(formData.get("comision_aplicada") as string)
+  const comision_aplicada_raw = formData.get("comision_aplicada") as string
+  const comision_aplicada = comision_aplicada_raw && comision_aplicada_raw.trim() !== "" ? Number.parseFloat(comision_aplicada_raw) : null
 
   // Validaciones básicas para campos NOT NULL
   if (!id || id.trim() === "") {
@@ -119,6 +126,11 @@ export async function updateTransaction(prevState: any, formData: FormData) {
       return { success: false, message: "Error al actualizar transacción: La categoría es requerida para egresos." }
     }
     tipo_egreso_val = categoria
+  }
+
+  // Validación adicional para comisión
+  if (aplicar_comision && (comision_aplicada === null || isNaN(comision_aplicada))) {
+    return { success: false, message: "Error al actualizar transacción: La comisión aplicada debe ser un número válido cuando se aplica comisión." }
   }
 
   const updatedTransaction: TablesUpdate<"transacciones"> = {

@@ -6,16 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { LeadForm } from "@/components/lead-form"
 import { PlusIcon } from "lucide-react"
 
-interface AddLeadDialogProps {
-  onLeadAdded: () => void
-}
-
-export function AddLeadDialog({ onLeadAdded }: AddLeadDialogProps) {
+export function AddLeadDialog() {
   const [isOpen, setIsOpen] = useState(false)
 
   const handleSuccess = () => {
     setIsOpen(false)
-    onLeadAdded() // Llama a la Server Action para revalidar
   }
 
   return (

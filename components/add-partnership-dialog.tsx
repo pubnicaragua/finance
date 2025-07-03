@@ -6,16 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { PartnershipForm } from "@/components/partnership-form"
 import { PlusIcon } from "lucide-react"
 
-interface AddPartnershipDialogProps {
-  onPartnershipAdded: () => void
-}
-
-export function AddPartnershipDialog({ onPartnershipAdded }: AddPartnershipDialogProps) {
+export function AddPartnershipDialog() {
   const [isOpen, setIsOpen] = useState(false)
 
   const handleSuccess = () => {
     setIsOpen(false)
-    onPartnershipAdded() // Llama a la Server Action para revalidar
   }
 
   return (
