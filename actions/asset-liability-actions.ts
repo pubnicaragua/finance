@@ -8,11 +8,10 @@ import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
 export async function addCurrentAsset(prevState: any, formData: FormData) {
   const supabase = createClient()
   const newAsset: TablesInsert<"activos_corrientes"> = {
-    nombre: formData.get("nombre") as string,
-    tipo: formData.get("tipo") as string,
-    monto: Number.parseFloat(formData.get("monto") as string),
-    fecha_adquisicion: formData.get("fecha_adquisicion") as string,
     descripcion: formData.get("descripcion") as string,
+    valor: Number.parseFloat(formData.get("valor") as string),
+    fecha_adquisicion: formData.get("fecha_adquisicion") as string,
+    cuenta_id: formData.get("cuenta_id") as string || null,
   }
 
   const { error } = await supabase.from("activos_corrientes").insert(newAsset)
@@ -31,11 +30,10 @@ export async function updateCurrentAsset(prevState: any, formData: FormData) {
   const supabase = createClient()
   const id = formData.get("id") as string
   const updatedAsset: TablesUpdate<"activos_corrientes"> = {
-    nombre: formData.get("nombre") as string,
-    tipo: formData.get("tipo") as string,
-    monto: Number.parseFloat(formData.get("monto") as string),
-    fecha_adquisicion: formData.get("fecha_adquisicion") as string,
     descripcion: formData.get("descripcion") as string,
+    valor: Number.parseFloat(formData.get("valor") as string),
+    fecha_adquisicion: formData.get("fecha_adquisicion") as string,
+    cuenta_id: formData.get("cuenta_id") as string || null,
   }
 
   const { error } = await supabase.from("activos_corrientes").update(updatedAsset).eq("id", id)
@@ -72,7 +70,7 @@ export async function getCurrentAssets() {
     .order("fecha_adquisicion", { ascending: false })
   if (error) {
     console.error("Error fetching current assets:", error)
-    return [] // Asegurar que siempre devuelve un array
+    return []
   }
   return data || []
 }
@@ -81,14 +79,9 @@ export async function getCurrentAssets() {
 export async function addNonCurrentAsset(prevState: any, formData: FormData) {
   const supabase = createClient()
   const newAsset: TablesInsert<"activos_no_corrientes"> = {
-    nombre: formData.get("nombre") as string,
-    tipo: formData.get("tipo") as string,
-    monto: Number.parseFloat(formData.get("monto") as string),
-    fecha_adquisicion: formData.get("fecha_adquisicion") as string,
-    vida_util_anios: Number.parseInt(formData.get("vida_util_anios") as string),
-    valor_residual: Number.parseFloat(formData.get("valor_residual") as string),
-    depreciacion_acumulada: Number.parseFloat(formData.get("depreciacion_acumulada") as string),
     descripcion: formData.get("descripcion") as string,
+    valor: Number.parseFloat(formData.get("valor") as string),
+    depreciacion: Number.parseFloat(formData.get("depreciacion") as string) || 0,
   }
 
   const { error } = await supabase.from("activos_no_corrientes").insert(newAsset)
@@ -107,14 +100,9 @@ export async function updateNonCurrentAsset(prevState: any, formData: FormData) 
   const supabase = createClient()
   const id = formData.get("id") as string
   const updatedAsset: TablesUpdate<"activos_no_corrientes"> = {
-    nombre: formData.get("nombre") as string,
-    tipo: formData.get("tipo") as string,
-    monto: Number.parseFloat(formData.get("monto") as string),
-    fecha_adquisicion: formData.get("fecha_adquisicion") as string,
-    vida_util_anios: Number.parseInt(formData.get("vida_util_anios") as string),
-    valor_residual: Number.parseFloat(formData.get("valor_residual") as string),
-    depreciacion_acumulada: Number.parseFloat(formData.get("depreciacion_acumulada") as string),
     descripcion: formData.get("descripcion") as string,
+    valor: Number.parseFloat(formData.get("valor") as string),
+    depreciacion: Number.parseFloat(formData.get("depreciacion") as string) || 0,
   }
 
   const { error } = await supabase.from("activos_no_corrientes").update(updatedAsset).eq("id", id)
@@ -148,10 +136,10 @@ export async function getNonCurrentAssets() {
   const { data, error } = await supabase
     .from("activos_no_corrientes")
     .select("*")
-    .order("fecha_adquisicion", { ascending: false })
+    .order("created_at", { ascending: false })
   if (error) {
     console.error("Error fetching non-current assets:", error)
-    return [] // Asegurar que siempre devuelve un array
+    return []
   }
   return data || []
 }
@@ -160,11 +148,9 @@ export async function getNonCurrentAssets() {
 export async function addCurrentLiability(prevState: any, formData: FormData) {
   const supabase = createClient()
   const newLiability: TablesInsert<"pasivos_corrientes"> = {
-    nombre: formData.get("nombre") as string,
-    tipo: formData.get("tipo") as string,
-    monto: Number.parseFloat(formData.get("monto") as string),
-    fecha_vencimiento: formData.get("fecha_vencimiento") as string,
     descripcion: formData.get("descripcion") as string,
+    debe: Number.parseFloat(formData.get("debe") as string),
+    saldo: Number.parseFloat(formData.get("saldo") as string),
   }
 
   const { error } = await supabase.from("pasivos_corrientes").insert(newLiability)
@@ -183,11 +169,9 @@ export async function updateCurrentLiability(prevState: any, formData: FormData)
   const supabase = createClient()
   const id = formData.get("id") as string
   const updatedLiability: TablesUpdate<"pasivos_corrientes"> = {
-    nombre: formData.get("nombre") as string,
-    tipo: formData.get("tipo") as string,
-    monto: Number.parseFloat(formData.get("monto") as string),
-    fecha_vencimiento: formData.get("fecha_vencimiento") as string,
     descripcion: formData.get("descripcion") as string,
+    debe: Number.parseFloat(formData.get("debe") as string),
+    saldo: Number.parseFloat(formData.get("saldo") as string),
   }
 
   const { error } = await supabase.from("pasivos_corrientes").update(updatedLiability).eq("id", id)
@@ -221,10 +205,10 @@ export async function getCurrentLiabilities() {
   const { data, error } = await supabase
     .from("pasivos_corrientes")
     .select("*")
-    .order("fecha_vencimiento", { ascending: false })
+    .order("created_at", { ascending: false })
   if (error) {
     console.error("Error fetching current liabilities:", error)
-    return [] // Asegurar que siempre devuelve un array
+    return []
   }
   return data || []
 }

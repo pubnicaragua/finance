@@ -12,9 +12,6 @@ export type Database = {
           created_at: string | null
           updated_at: string | null
           fecha_adquisicion: string | null
-          nombre: string
-          tipo: string
-          monto: number
         }
         Insert: {
           id?: string
@@ -24,9 +21,6 @@ export type Database = {
           created_at?: string | null
           updated_at?: string | null
           fecha_adquisicion?: string | null
-          nombre: string
-          tipo: string
-          monto: number
         }
         Update: {
           id?: string
@@ -36,9 +30,6 @@ export type Database = {
           created_at?: string | null
           updated_at?: string | null
           fecha_adquisicion?: string | null
-          nombre?: string
-          tipo?: string
-          monto?: number
         }
         Relationships: [
           {
@@ -59,13 +50,6 @@ export type Database = {
           valor_neto: number | null
           created_at: string | null
           updated_at: string | null
-          nombre: string
-          tipo: string
-          monto: number
-          fecha_adquisicion: string
-          vida_util_anios: number | null
-          valor_residual: number | null
-          depreciacion_acumulada: number | null
         }
         Insert: {
           id?: string
@@ -75,13 +59,6 @@ export type Database = {
           valor_neto?: number | null
           created_at?: string | null
           updated_at?: string | null
-          nombre: string
-          tipo: string
-          monto: number
-          fecha_adquisicion: string
-          vida_util_anios?: number | null
-          valor_residual?: number | null
-          depreciacion_acumulada?: number | null
         }
         Update: {
           id?: string
@@ -91,13 +68,6 @@ export type Database = {
           valor_neto?: number | null
           created_at?: string | null
           updated_at?: string | null
-          nombre?: string
-          tipo?: string
-          monto?: number
-          fecha_adquisicion?: string
-          vida_util_anios?: number | null
-          valor_residual?: number | null
-          depreciacion_acumulada?: number | null
         }
         Relationships: []
       }
@@ -396,31 +366,52 @@ export type Database = {
       pasivos_corrientes: {
         Row: {
           id: string
-          nombre: string
-          tipo: string
-          monto: number
-          fecha_vencimiento: string
-          descripcion: string | null
+          descripcion: string
+          debe: number
+          saldo: number
           created_at: string | null
           updated_at: string | null
         }
         Insert: {
           id?: string
-          nombre: string
-          tipo: string
-          monto: number
-          fecha_vencimiento: string
-          descripcion?: string | null
+          descripcion: string
+          debe: number
+          saldo: number
           created_at?: string | null
           updated_at?: string | null
         }
         Update: {
           id?: string
-          nombre?: string
-          tipo?: string
-          monto?: number
-          fecha_vencimiento?: string
-          descripcion?: string | null
+          descripcion?: string
+          debe?: number
+          saldo?: number
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      pasivos_no_corrientes: {
+        Row: {
+          id: string
+          descripcion: string
+          saldo: number
+          fecha_vencimiento: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          descripcion: string
+          saldo: number
+          fecha_vencimiento?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          descripcion?: string
+          saldo?: number
+          fecha_vencimiento?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
