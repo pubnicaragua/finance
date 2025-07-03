@@ -4,7 +4,6 @@ import { useActionState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { addCurrentAsset, updateCurrentAsset } from "@/actions/asset-liability-actions"
@@ -41,46 +40,29 @@ export function ActivoCorrienteForm({ initialData, onSuccess, onCancel }: Activo
     <form ref={formRef} action={formAction} className="grid gap-4 py-4">
       {isEditing && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="nombre" className="text-right">
-          Nombre
+        <Label htmlFor="descripcion" className="text-right">
+          Descripción
         </Label>
         <Input
-          id="nombre"
-          name="nombre"
-          placeholder="Ej: Efectivo, Cuentas por Cobrar"
-          defaultValue={initialData?.nombre || ""}
+          id="descripcion"
+          name="descripcion"
+          placeholder="Ej: Efectivo en caja, Cuentas por cobrar"
+          defaultValue={initialData?.descripcion || ""}
           className="col-span-3"
           required
         />
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="tipo" className="text-right">
-          Tipo
-        </Label>
-        <Select name="tipo" defaultValue={initialData?.tipo || "Efectivo"}>
-          <SelectTrigger className="col-span-3">
-            <SelectValue placeholder="Selecciona un tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Efectivo">Efectivo</SelectItem>
-            <SelectItem value="Cuentas por Cobrar">Cuentas por Cobrar</SelectItem>
-            <SelectItem value="Inventario">Inventario</SelectItem>
-            <SelectItem value="Inversiones a Corto Plazo">Inversiones a Corto Plazo</SelectItem>
-            <SelectItem value="Otros">Otros</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="monto" className="text-right">
-          Monto (USD)
+        <Label htmlFor="valor" className="text-right">
+          Valor (USD)
         </Label>
         <Input
-          id="monto"
-          name="monto"
+          id="valor"
+          name="valor"
           type="number"
           step="0.01"
           placeholder="0.00"
-          defaultValue={initialData?.monto?.toString() || ""}
+          defaultValue={initialData?.valor?.toString() || ""}
           className="col-span-3"
           required
         />
@@ -94,19 +76,6 @@ export function ActivoCorrienteForm({ initialData, onSuccess, onCancel }: Activo
           name="fecha_adquisicion"
           type="date"
           defaultValue={initialData?.fecha_adquisicion || new Date().toISOString().split("T")[0]}
-          className="col-span-3"
-          required
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="descripcion" className="text-right">
-          Descripción
-        </Label>
-        <Textarea
-          id="descripcion"
-          name="descripcion"
-          placeholder="Detalles adicionales del activo"
-          defaultValue={initialData?.descripcion || ""}
           className="col-span-3"
         />
       </div>

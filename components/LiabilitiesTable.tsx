@@ -5,8 +5,8 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from "lucide-react"
-import { DataTable } from "@/components/ui/data-table" // Asegúrate de que este componente exista
-import { deleteCurrentLiability } from "@/actions/asset-liability-actions" // Importar la Server Action
+import { DataTable } from "@/components/ui/data-table"
+import { deleteCurrentLiability } from "@/actions/asset-liability-actions"
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { PasivoCorrienteForm } from "@/components/pasivo-corriente-form"
@@ -14,7 +14,7 @@ import type { Tables } from "@/lib/database.types"
 
 interface LiabilitiesTableProps {
   liabilities: Tables<"pasivos_corrientes">[]
-  onLiabilityOperation: () => void // Callback para revalidar datos
+  onLiabilityOperation: () => void
 }
 
 export function LiabilitiesTable({ liabilities, onLiabilityOperation }: LiabilitiesTableProps) {
@@ -29,7 +29,7 @@ export function LiabilitiesTable({ liabilities, onLiabilityOperation }: Liabilit
         title: "Éxito",
         description: result.message,
       })
-      onLiabilityOperation() // Revalidar datos
+      onLiabilityOperation()
     } else {
       toast({
         title: "Error",
@@ -47,41 +47,37 @@ export function LiabilitiesTable({ liabilities, onLiabilityOperation }: Liabilit
   const handleEditSuccess = () => {
     setIsEditDialogOpen(false)
     setEditingLiability(null)
-    onLiabilityOperation() // Revalidar datos
+    onLiabilityOperation()
   }
 
   const columns: ColumnDef<Tables<"pasivos_corrientes">>[] = [
     {
-      accessorKey: "nombre",
-      header: "Nombre",
+      accessorKey: "descripcion",
+      header: "Descripción",
     },
     {
-      accessorKey: "tipo",
-      header: "Tipo",
-    },
-    {
-      accessorKey: "monto",
-      header: "Monto",
+      accessorKey: "debe",
+      header: "Debe",
       cell: ({ row }) => {
-        const amount = Number.parseFloat(row.getValue("monto"))
+        const amount = Number.parseFloat(row.getValue("debe"))
         const formatted = new Intl.NumberFormat("es-NI", {
           style: "currency",
           currency: "USD",
         }).format(amount)
-        return <div className="font-medium">{formatted}</div>
+        return <div className="font-medium text-red-600">{formatted}</div>
       },
     },
     {
-      accessorKey: "fecha_vencimiento",
-      header: "Fecha Vencimiento",
-    },
-    {
-      accessorKey: "estado",
-      header: "Estado",
-    },
-    {
-      accessorKey: "descripcion",
-      header: "Descripción",
+      accessorKey: "saldo",
+      header: "Saldo",
+      cell: ({ row }) => {
+        const amount = Number.parseFloat(row.getValue("saldo"))
+        const formatted = new Intl.NumberFormat("es-NI", {
+          style: "currency",
+          currency: "USD",
+        }).format(amount)
+        return <div className="font-medium text-red-600">{formatted}</div>
+      },
     },
     {
       id: "actions",

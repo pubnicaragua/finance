@@ -55,18 +55,14 @@ export function AssetsTable({ assets, onAssetOperation, type }: AssetsTableProps
 
   const columns: ColumnDef<any>[] = [
     {
-      accessorKey: "nombre",
-      header: "Nombre",
+      accessorKey: "descripcion",
+      header: "Descripción",
     },
     {
-      accessorKey: "tipo",
-      header: "Tipo",
-    },
-    {
-      accessorKey: "monto",
-      header: "Monto",
+      accessorKey: "valor",
+      header: "Valor",
       cell: ({ row }) => {
-        const amount = Number.parseFloat(row.getValue("monto"))
+        const amount = Number.parseFloat(row.getValue("valor"))
         const formatted = new Intl.NumberFormat("es-NI", {
           style: "currency",
           currency: "USD",
@@ -74,43 +70,42 @@ export function AssetsTable({ assets, onAssetOperation, type }: AssetsTableProps
         return <div className="font-medium">{formatted}</div>
       },
     },
-    {
-      accessorKey: "fecha_adquisicion",
-      header: "Fecha Adquisición",
-    },
     ...(type === "no_corriente" ? [
       {
-        accessorKey: "vida_util_anios",
-        header: "Vida Útil (Años)",
-      },
-      {
-        accessorKey: "valor_residual",
-        header: "Valor Residual",
+        accessorKey: "depreciacion",
+        header: "Depreciación",
         cell: ({ row }: any) => {
-          const amount = Number.parseFloat(row.getValue("valor_residual"))
+          const amount = Number.parseFloat(row.getValue("depreciacion") || 0)
           const formatted = new Intl.NumberFormat("es-NI", {
             style: "currency",
             currency: "USD",
           }).format(amount)
-          return <div className="font-medium">{formatted}</div>
+          return <div className="font-medium text-red-600">{formatted}</div>
         },
       },
       {
-        accessorKey: "depreciacion_acumulada",
-        header: "Depreciación Acumulada",
+        accessorKey: "valor_neto",
+        header: "Valor Neto",
         cell: ({ row }: any) => {
-          const amount = Number.parseFloat(row.getValue("depreciacion_acumulada"))
+          const valor = Number.parseFloat(row.getValue("valor") || 0)
+          const depreciacion = Number.parseFloat(row.getValue("depreciacion") || 0)
+          const valorNeto = valor - depreciacion
           const formatted = new Intl.NumberFormat("es-NI", {
             style: "currency",
             currency: "USD",
-          }).format(amount)
-          return <div className="font-medium">{formatted}</div>
+          }).format(valorNeto)
+          return <div className="font-medium text-green-600">{formatted}</div>
         },
       },
     ] : []),
     {
-      accessorKey: "descripcion",
-      header: "Descripción",
+      accessorKey: "fecha_adquisicion",
+      header: "Fecha",
+      cell: ({ row }) => {
+        const date = row.getValue("fecha_adquisicion")
+        if (!date) return "N/A"
+        return new Date(date as string).toLocaleDateString()
+      },
     },
     {
       id: "actions",

@@ -4,7 +4,6 @@ import { useActionState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { addNonCurrentAsset, updateNonCurrentAsset } from "@/actions/asset-liability-actions"
@@ -41,113 +40,44 @@ export function ActivoNoCorrienteForm({ initialData, onSuccess, onCancel }: Acti
     <form ref={formRef} action={formAction} className="grid gap-4 py-4">
       {isEditing && <input type="hidden" name="id" value={initialData.id} />}
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="nombre" className="text-right">
-          Nombre
-        </Label>
-        <Input
-          id="nombre"
-          name="nombre"
-          placeholder="Ej: Edificios, Maquinaria"
-          defaultValue={initialData?.nombre || ""}
-          className="col-span-3"
-          required
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="tipo" className="text-right">
-          Tipo
-        </Label>
-        <Select name="tipo" defaultValue={initialData?.tipo || "Propiedad, Planta y Equipo"}>
-          <SelectTrigger className="col-span-3">
-            <SelectValue placeholder="Selecciona un tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Propiedad, Planta y Equipo">Propiedad, Planta y Equipo</SelectItem>
-            <SelectItem value="Activos Intangibles">Activos Intangibles</SelectItem>
-            <SelectItem value="Inversiones a Largo Plazo">Inversiones a Largo Plazo</SelectItem>
-            <SelectItem value="Otros">Otros</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="monto" className="text-right">
-          Monto (USD)
-        </Label>
-        <Input
-          id="monto"
-          name="monto"
-          type="number"
-          step="0.01"
-          placeholder="0.00"
-          defaultValue={initialData?.monto?.toString() || ""}
-          className="col-span-3"
-          required
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="fecha_adquisicion" className="text-right">
-          Fecha Adquisición
-        </Label>
-        <Input
-          id="fecha_adquisicion"
-          name="fecha_adquisicion"
-          type="date"
-          defaultValue={initialData?.fecha_adquisicion || new Date().toISOString().split("T")[0]}
-          className="col-span-3"
-          required
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="vida_util_anios" className="text-right">
-          Vida Útil (Años)
-        </Label>
-        <Input
-          id="vida_util_anios"
-          name="vida_util_anios"
-          type="number"
-          step="1"
-          placeholder="Ej: 10"
-          defaultValue={initialData?.vida_util_anios?.toString() || ""}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="valor_residual" className="text-right">
-          Valor Residual (USD)
-        </Label>
-        <Input
-          id="valor_residual"
-          name="valor_residual"
-          type="number"
-          step="0.01"
-          placeholder="0.00"
-          defaultValue={initialData?.valor_residual?.toString() || ""}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="depreciacion_acumulada" className="text-right">
-          Depreciación Acumulada (USD)
-        </Label>
-        <Input
-          id="depreciacion_acumulada"
-          name="depreciacion_acumulada"
-          type="number"
-          step="0.01"
-          placeholder="0.00"
-          defaultValue={initialData?.depreciacion_acumulada?.toString() || ""}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
         <Label htmlFor="descripcion" className="text-right">
           Descripción
         </Label>
-        <Textarea
+        <Input
           id="descripcion"
           name="descripcion"
-          placeholder="Detalles adicionales del activo"
+          placeholder="Ej: Edificios, Maquinaria, Equipos"
           defaultValue={initialData?.descripcion || ""}
+          className="col-span-3"
+          required
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="valor" className="text-right">
+          Valor Original (USD)
+        </Label>
+        <Input
+          id="valor"
+          name="valor"
+          type="number"
+          step="0.01"
+          placeholder="0.00"
+          defaultValue={initialData?.valor?.toString() || ""}
+          className="col-span-3"
+          required
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="depreciacion" className="text-right">
+          Depreciación Acumulada (USD)
+        </Label>
+        <Input
+          id="depreciacion"
+          name="depreciacion"
+          type="number"
+          step="0.01"
+          placeholder="0.00"
+          defaultValue={initialData?.depreciacion?.toString() || "0"}
           className="col-span-3"
         />
       </div>

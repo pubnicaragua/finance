@@ -9,22 +9,18 @@ import { cn } from "@/lib/utils"
 export default async function BalanceSheetPage() {
   const supabase = createClient()
 
-  // Fetch Activos Circulantes
+  // Fetch Activos Corrientes
   const { data: cuentas, error: cuentasError } = await supabase.from("cuentas_financieras").select("nombre, saldo")
-  const { data: activosCorrientes, error: acError } = await supabase
-    .from("activos_corrientes")
-    .select("descripcion, valor") // Asumiendo que inventarios y cuentas por cobrar están aquí o se pueden categorizar
+  const { data: activosCorrientes, error: acError } = await supabase.from("activos_corrientes").select("*")
 
   // Fetch Activos No Corrientes
-  const { data: activosNoCorrientes, error: ancError } = await supabase
-    .from("activos_no_corrientes")
-    .select("valor_neto")
+  const { data: activosNoCorrientes, error: ancError } = await supabase.from("activos_no_corrientes").select("*")
 
   // Fetch Pasivos Corrientes
-  const { data: pasivosCorrientes, error: pcError } = await supabase.from("pasivos_corrientes").select("saldo")
+  const { data: pasivosCorrientes, error: pcError } = await supabase.from("pasivos_corrientes").select("*")
 
   // Fetch Pasivos No Corrientes
-  const { data: pasivosNoCorrientes, error: pncError } = await supabase.from("pasivos_no_corrientes").select("saldo")
+  const { data: pasivosNoCorrientes, error: pncError } = await supabase.from("pasivos_no_corrientes").select("*")
 
   // Fetch Utilidad Neta (para Patrimonio)
   const { data: ingresosData, error: ingresosError } = await supabase
@@ -38,7 +34,7 @@ export default async function BalanceSheetPage() {
   const { data: comisionesData, error: comisionesError } = await supabase
     .from("comisiones")
     .select("monto")
-    .eq("pagada", false) // Asumiendo que solo las comisiones no pagadas afectan la utilidad neta para este cálculo
+    .eq("pagada", false)
 
   if (cuentasError || acError || ancError || pcError || pncError || ingresosError || egresosError || comisionesError) {
     console.error("Error fetching balance sheet data:", {
@@ -69,11 +65,10 @@ export default async function BalanceSheetPage() {
   // Cálculos de Activos
   const caja = cuentas?.find((c) => c.nombre === "Caja Dólares")?.saldo || 0
   const bancos = cuentas?.find((c) => c.nombre === "Banco Lafise USD")?.saldo || 0
-  const inventarios = activosCorrientes?.find((a) => a.descripcion === "Inventarios")?.valor || 0
-  const cuentasPorCobrar = activosCorrientes?.find((a) => a.descripcion === "Cuentas por Cobrar")?.valor || 0
-
-  const totalActivosCirculantes = caja + bancos + inventarios + cuentasPorCobrar
-  const totalActivosNoCorrientes = (activosNoCorrientes || []).reduce((sum, a) => sum + (a.valor_neto || 0), 0)
+  const totalActivosCorrientesDB = (activosCorrientes || []).reduce((sum, a) => sum + (a.valor || 0), 0)
+  
+  const totalActivosCirculantes = caja + bancos + totalActivosCorrientesDB
+  const totalActivosNoCorrientes = (activosNoCorrientes || []).reduce((sum, a) => sum + ((a.valor || 0) - (a.depreciacion || 0)), 0)
   const totalActivos = totalActivosCirculantes + totalActivosNoCorrientes
 
   // Cálculos de Pasivos
@@ -85,10 +80,9 @@ export default async function BalanceSheetPage() {
   const totalIngresos = (ingresosData || []).reduce((sum, t) => sum + (t.monto || 0), 0)
   const totalEgresos = (egresosData || []).reduce((sum, t) => sum + (t.monto || 0), 0)
   const totalComisionesPendientes = (comisionesData || []).reduce((sum, c) => sum + (c.monto || 0), 0)
-  const utilidadNeta = totalIngresos - totalEgresos - totalPasivosCorrientes - totalComisionesPendientes // Nueva fórmula
+  const utilidadNeta = totalIngresos - totalEgresos - totalComisionesPendientes
 
-  const totalPatrimonio = utilidadNeta // Asumiendo que la utilidad neta es el principal componente del patrimonio por ahora
-
+  const totalPatrimonio = utilidadNeta
   const totalPasivosYPatrimonio = totalPasivos + totalPatrimonio
   const diferenciaBalance = totalActivos - totalPasivosYPatrimonio
 
@@ -131,14 +125,12 @@ export default async function BalanceSheetPage() {
                     <TableCell className="pl-8">Bancos</TableCell>
                     <TableCell className="text-right text-green-amount">{bancos.toFixed(2)}</TableCell>
                   </TableRow>
-                  <TableRow>
-                    <TableCell className="pl-8">Inventarios</TableCell>
-                    <TableCell className="text-right text-green-amount">{inventarios.toFixed(2)}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="pl-8">Cuentas por Cobrar</TableCell>
-                    <TableCell className="text-right text-green-amount">{cuentasPorCobrar.toFixed(2)}</TableCell>
-                  </TableRow>
+                  {(activosCorrientes || []).map((activo) => (
+                    <TableRow key={activo.id}>
+                      <TableCell className="pl-8">{activo.descripcion}</TableCell>
+                      <TableCell className="text-right text-green-amount">{activo.valor.toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))}
                   <TableRow className="font-bold">
                     <TableCell>Total Activos Circulantes</TableCell>
                     <TableCell className="text-right text-green-amount">{totalActivosCirculantes.toFixed(2)}</TableCell>
