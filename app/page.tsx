@@ -34,6 +34,7 @@ export default async function HomePage() {
     ].filter(Boolean)
 
     if (errors.length > 0) {
+      console.error("Dashboard errors:", errors)
       return (
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
