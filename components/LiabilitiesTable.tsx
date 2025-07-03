@@ -14,10 +14,9 @@ import type { Tables } from "@/lib/database.types"
 
 interface LiabilitiesTableProps {
   liabilities: Tables<"pasivos_corrientes">[]
-  onLiabilityOperation: () => void
 }
 
-export function LiabilitiesTable({ liabilities, onLiabilityOperation }: LiabilitiesTableProps) {
+export function LiabilitiesTable({ liabilities }: LiabilitiesTableProps) {
   const { toast } = useToast()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingLiability, setEditingLiability] = useState<Tables<"pasivos_corrientes"> | null>(null)
@@ -29,7 +28,7 @@ export function LiabilitiesTable({ liabilities, onLiabilityOperation }: Liabilit
         title: "Éxito",
         description: result.message,
       })
-      onLiabilityOperation()
+      window.location.reload()
     } else {
       toast({
         title: "Error",
@@ -47,7 +46,7 @@ export function LiabilitiesTable({ liabilities, onLiabilityOperation }: Liabilit
   const handleEditSuccess = () => {
     setIsEditDialogOpen(false)
     setEditingLiability(null)
-    onLiabilityOperation()
+    window.location.reload()
   }
 
   const columns: ColumnDef<Tables<"pasivos_corrientes">>[] = [

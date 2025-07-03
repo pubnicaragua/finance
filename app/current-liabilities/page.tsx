@@ -8,15 +8,9 @@ import { PlusIcon } from "lucide-react"
 import { PasivoCorrienteForm } from "@/components/pasivo-corriente-form"
 import { LiabilitiesTable } from "@/components/LiabilitiesTable"
 import { getCurrentLiabilities } from "@/actions/asset-liability-actions"
-import { revalidatePath } from "next/cache"
 
 export default async function CurrentLiabilitiesPage() {
   const liabilities = await getCurrentLiabilities()
-
-  const handleLiabilityOperation = async () => {
-    "use server"
-    revalidatePath("/current-liabilities")
-  }
 
   return (
     <SidebarInset>
@@ -36,16 +30,13 @@ export default async function CurrentLiabilitiesPage() {
               <DialogHeader>
                 <DialogTitle>Añadir Pasivo Corriente</DialogTitle>
               </DialogHeader>
-              <PasivoCorrienteForm
-                onSuccess={handleLiabilityOperation}
-                onCancel={() => {}}
-              />
+              <PasivoCorrienteForm />
             </DialogContent>
           </Dialog>
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4">
-        <LiabilitiesTable liabilities={liabilities} onLiabilityOperation={handleLiabilityOperation} />
+        <LiabilitiesTable liabilities={liabilities} />
       </main>
     </SidebarInset>
   )

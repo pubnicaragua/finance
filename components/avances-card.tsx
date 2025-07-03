@@ -3,6 +3,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -15,10 +16,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Plus, Edit, Trash2 } from "lucide-react"
+import { Plus, Edit, Trash2, ExternalLink, CheckCircle, XCircle } from "lucide-react"
 import { AvanceForm } from "@/components/avance-form"
 import { deleteAvance } from "@/actions/project-updates-actions"
 import type { Tables } from "@/lib/database.types"
+import { cn } from "@/lib/utils"
 import { useState } from "react"
 
 interface AvancesCardProps {
@@ -60,6 +62,9 @@ export function AvancesCard({ clienteId, avances }: AvancesCardProps) {
                 <TableHead>Fecha</TableHead>
                 <TableHead>Descripción</TableHead>
                 <TableHead>Avance (%)</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Backlog</TableHead>
+                <TableHead>Firma</TableHead>
                 <TableHead>Comentarios Cliente</TableHead>
                 <TableHead>Acciones</TableHead>
               </TableRow>
@@ -67,7 +72,7 @@ export function AvancesCard({ clienteId, avances }: AvancesCardProps) {
             <TableBody>
               {avances.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
                     No hay avances registrados.
                   </TableCell>
                 </TableRow>
@@ -75,9 +80,47 @@ export function AvancesCard({ clienteId, avances }: AvancesCardProps) {
                 avances.map((avance) => (
                   <TableRow key={avance.id}>
                     <TableCell>{avance.fecha}</TableCell>
-                    <TableCell>{avance.descripcion}</TableCell>
+                    <TableCell className="max-w-xs truncate">{avance.descripcion}</TableCell>
                     <TableCell className="text-green-amount">{avance.porcentaje_avance?.toFixed(2)}%</TableCell>
-                    <TableCell>{avance.comentarios_cliente || "N/A"}</TableCell>
+                    <TableCell>
+                      {avance.completado ? (
+                        <Badge variant="default" className="bg-green-100 text-green-700">
+                          <CheckCircle className="mr-1 h-3 w-3" />
+                          Completado
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">
+                          <XCircle className="mr-1 h-3 w-3" />
+                          Pendiente
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {avance.backlog_url ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                        >
+                          <a href={avance.backlog_url} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {avance.firma_virtual ? (
+                        <div className="text-sm">
+                          <div className="font-medium">{avance.firma_virtual}</div>
+                          <div className="text-xs text-muted-foreground">Firmado digitalmente</div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Sin firma</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate">{avance.comentarios_cliente || "N/A"}</TableCell>
                     <TableCell className="flex gap-2">
                       <Dialog
                         open={isEditAvanceDialogOpen.open && isEditAvanceDialogOpen.data?.id === avance.id}

@@ -13,6 +13,9 @@ export async function addAvance(prevState: any, formData: FormData) {
   const descripcion = formData.get("descripcion") as string
   const porcentaje_avance = Number.parseFloat(formData.get("porcentaje_avance") as string)
   const comentarios_cliente = formData.get("comentarios_cliente") as string
+  const completado = formData.get("completado") === "on"
+  const backlog_url = formData.get("backlog_url") as string
+  const firma_virtual = formData.get("firma_virtual") as string
 
   if (!cliente_id || cliente_id.trim() === "") {
     console.error("Error: cliente_id es nulo o inválido para addAvance.")
@@ -44,6 +47,9 @@ export async function addAvance(prevState: any, formData: FormData) {
     descripcion: descripcion,
     porcentaje_avance: porcentaje_avance,
     comentarios_cliente: comentarios_cliente,
+    completado: completado,
+    backlog_url: backlog_url || null,
+    firma_virtual: firma_virtual || null,
   }
 
   const { error } = await supabase.from("avances_proyecto").insert(newAvance)
@@ -65,6 +71,9 @@ export async function updateAvance(prevState: any, formData: FormData) {
   const descripcion = formData.get("descripcion") as string
   const porcentaje_avance = Number.parseFloat(formData.get("porcentaje_avance") as string)
   const comentarios_cliente = formData.get("comentarios_cliente") as string
+  const completado = formData.get("completado") === "on"
+  const backlog_url = formData.get("backlog_url") as string
+  const firma_virtual = formData.get("firma_virtual") as string
 
   if (!id || id.trim() === "") {
     console.error("Error: ID es nulo o inválido para updateAvance.")
@@ -99,6 +108,9 @@ export async function updateAvance(prevState: any, formData: FormData) {
     descripcion: descripcion,
     porcentaje_avance: porcentaje_avance,
     comentarios_cliente: comentarios_cliente,
+    completado: completado,
+    backlog_url: backlog_url || null,
+    firma_virtual: firma_virtual || null,
   }
 
   const { error } = await supabase.from("avances_proyecto").update(updatedAvance).eq("id", id)

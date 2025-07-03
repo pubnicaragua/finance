@@ -14,7 +14,7 @@ export async function addClient(prevState: any, formData: FormData) {
     pais: formData.get("pais") as string,
     costo_proyecto: Number.parseFloat(formData.get("costo_proyecto") as string),
     abonado: Number.parseFloat(formData.get("abonado") as string),
-    deuda: Number.parseFloat(formData.get("deuda") as string),
+    // Remover deuda ya que es una columna generada
     fecha_vencimiento: formData.get("fecha_vencimiento") as string,
     historial_pagos: [],
     proyeccion_pagos: [],
@@ -42,7 +42,7 @@ export async function updateClient(prevState: any, formData: FormData) {
     pais: formData.get("pais") as string,
     costo_proyecto: Number.parseFloat(formData.get("costo_proyecto") as string),
     abonado: Number.parseFloat(formData.get("abonado") as string),
-    deuda: Number.parseFloat(formData.get("deuda") as string),
+    // Remover deuda ya que es una columna generada
     fecha_vencimiento: formData.get("fecha_vencimiento") as string,
   }
 

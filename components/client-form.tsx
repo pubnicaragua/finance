@@ -101,7 +101,7 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
           />
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="costo_proyecto">Costo del Proyecto (USD)</Label>
           <Input
@@ -122,17 +122,6 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
             step="0.01"
             placeholder="0.00"
             defaultValue={initialData?.abonado?.toString() || ""}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="deuda">Deuda (USD)</Label>
-          <Input
-            id="deuda"
-            name="deuda"
-            type="number"
-            step="0.01"
-            placeholder="0.00"
-            defaultValue={initialData?.deuda?.toString() || ""}
           />
         </div>
       </div>

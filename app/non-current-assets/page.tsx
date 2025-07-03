@@ -8,15 +8,9 @@ import { PlusIcon } from "lucide-react"
 import { ActivoNoCorrienteForm } from "@/components/activo-no-corriente-form"
 import { AssetsTable } from "@/components/AssetsTable"
 import { getNonCurrentAssets } from "@/actions/asset-liability-actions"
-import { revalidatePath } from "next/cache"
 
 export default async function NonCurrentAssetsPage() {
   const assets = await getNonCurrentAssets()
-
-  const handleAssetOperation = async () => {
-    "use server"
-    revalidatePath("/non-current-assets")
-  }
 
   return (
     <SidebarInset>
@@ -36,16 +30,13 @@ export default async function NonCurrentAssetsPage() {
               <DialogHeader>
                 <DialogTitle>Añadir Activo No Corriente</DialogTitle>
               </DialogHeader>
-              <ActivoNoCorrienteForm
-                onSuccess={handleAssetOperation}
-                onCancel={() => {}}
-              />
+              <ActivoNoCorrienteForm />
             </DialogContent>
           </Dialog>
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4">
-        <AssetsTable assets={assets} onAssetOperation={handleAssetOperation} type="no_corriente" />
+        <AssetsTable assets={assets} type="no_corriente" />
       </main>
     </SidebarInset>
   )

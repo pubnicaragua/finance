@@ -8,15 +8,9 @@ import { PlusIcon } from "lucide-react"
 import { ActivoCorrienteForm } from "@/components/activo-corriente-form"
 import { AssetsTable } from "@/components/AssetsTable"
 import { getCurrentAssets } from "@/actions/asset-liability-actions"
-import { revalidatePath } from "next/cache"
 
 export default async function CurrentAssetsPage() {
   const assets = await getCurrentAssets()
-
-  const handleAssetOperation = async () => {
-    "use server"
-    revalidatePath("/activos-corrientes")
-  }
 
   return (
     <SidebarInset>
@@ -36,16 +30,13 @@ export default async function CurrentAssetsPage() {
               <DialogHeader>
                 <DialogTitle>Añadir Activo Corriente</DialogTitle>
               </DialogHeader>
-              <ActivoCorrienteForm
-                onSuccess={handleAssetOperation}
-                onCancel={() => {}}
-              />
+              <ActivoCorrienteForm />
             </DialogContent>
           </Dialog>
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4">
-        <AssetsTable assets={assets} onAssetOperation={handleAssetOperation} type="corriente" />
+        <AssetsTable assets={assets} type="corriente" />
       </main>
     </SidebarInset>
   )

@@ -118,6 +118,9 @@ export type Database = {
           descripcion: string
           fecha: string
           porcentaje_avance: number
+          completado: boolean | null
+          backlog_url: string | null
+          firma_virtual: string | null
         }
         Insert: {
           id?: string
@@ -127,6 +130,9 @@ export type Database = {
           descripcion: string
           fecha: string
           porcentaje_avance?: number
+          completado?: boolean | null
+          backlog_url?: string | null
+          firma_virtual?: string | null
         }
         Update: {
           id?: string
@@ -136,6 +142,9 @@ export type Database = {
           descripcion?: string
           fecha?: string
           porcentaje_avance?: number
+          completado?: boolean | null
+          backlog_url?: string | null
+          firma_virtual?: string | null
         }
         Relationships: [
           {
@@ -173,7 +182,6 @@ export type Database = {
           pais?: string | null
           costo_proyecto?: number | null
           abonado?: number | null
-          deuda?: number | null
           fecha_vencimiento?: string | null
           historial_pagos?: Json | null
           proyeccion_pagos?: Json | null
@@ -189,7 +197,6 @@ export type Database = {
           pais?: string | null
           costo_proyecto?: number | null
           abonado?: number | null
-          deuda?: number | null
           fecha_vencimiento?: string | null
           historial_pagos?: Json | null
           proyeccion_pagos?: Json | null

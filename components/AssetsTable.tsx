@@ -15,11 +15,10 @@ import type { Tables } from "@/lib/database.types"
 
 interface AssetsTableProps {
   assets: Tables<"activos_no_corrientes">[] | Tables<"activos_corrientes">[]
-  onAssetOperation: () => void
   type: "corriente" | "no_corriente"
 }
 
-export function AssetsTable({ assets, onAssetOperation, type }: AssetsTableProps) {
+export function AssetsTable({ assets, type }: AssetsTableProps) {
   const { toast } = useToast()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingAsset, setEditingAsset] = useState<any>(null)
@@ -32,7 +31,7 @@ export function AssetsTable({ assets, onAssetOperation, type }: AssetsTableProps
         title: "Éxito",
         description: result.message,
       })
-      onAssetOperation()
+      window.location.reload()
     } else {
       toast({
         title: "Error",
@@ -50,7 +49,7 @@ export function AssetsTable({ assets, onAssetOperation, type }: AssetsTableProps
   const handleEditSuccess = () => {
     setIsEditDialogOpen(false)
     setEditingAsset(null)
-    onAssetOperation()
+    window.location.reload()
   }
 
   const columns: ColumnDef<any>[] = [
