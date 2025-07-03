@@ -109,6 +109,63 @@ export type Database = {
           },
         ]
       }
+      asignaciones: {
+        Row: {
+          id: string
+          miembro_id: string
+          titulo: string
+          descripcion: string | null
+          fecha_inicio: string
+          fecha_fin: string
+          estado: string
+          prioridad: string | null
+          proyecto_id: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          miembro_id: string
+          titulo: string
+          descripcion?: string | null
+          fecha_inicio: string
+          fecha_fin: string
+          estado?: string
+          prioridad?: string | null
+          proyecto_id?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          miembro_id?: string
+          titulo?: string
+          descripcion?: string | null
+          fecha_inicio?: string
+          fecha_fin?: string
+          estado?: string
+          prioridad?: string | null
+          proyecto_id?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asignaciones_miembro_id_fkey"
+            columns: ["miembro_id"]
+            isOneToOne: false
+            referencedRelation: "miembros_equipo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_proyecto_id_fkey"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       avances_proyecto: {
         Row: {
           id: string
@@ -265,6 +322,47 @@ export type Database = {
           },
         ]
       }
+      configuracion_notificaciones: {
+        Row: {
+          id: string
+          miembro_id: string
+          notificaciones_activas: boolean | null
+          notificar_sin_asignacion: boolean | null
+          tiempo_sin_asignacion: unknown | null
+          notificar_por_email: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          miembro_id: string
+          notificaciones_activas?: boolean | null
+          notificar_sin_asignacion?: boolean | null
+          tiempo_sin_asignacion?: unknown | null
+          notificar_por_email?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          miembro_id?: string
+          notificaciones_activas?: boolean | null
+          notificar_sin_asignacion?: boolean | null
+          tiempo_sin_asignacion?: unknown | null
+          notificar_por_email?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "configuracion_notificaciones_miembro_id_fkey"
+            columns: ["miembro_id"]
+            isOneToOne: true
+            referencedRelation: "miembros_equipo"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       cuentas_financieras: {
         Row: {
           id: string
@@ -385,6 +483,50 @@ export type Database = {
         }
         Relationships: []
       }
+      miembros_equipo: {
+        Row: {
+          id: string
+          nombre: string
+          email: string
+          cargo: string
+          departamento: string | null
+          activo: boolean | null
+          user_id: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          nombre: string
+          email: string
+          cargo: string
+          departamento?: string | null
+          activo?: boolean | null
+          user_id?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          nombre?: string
+          email?: string
+          cargo?: string
+          departamento?: string | null
+          activo?: boolean | null
+          user_id?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "miembros_equipo_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       nomina: {
         Row: {
           id: string
@@ -437,6 +579,44 @@ export type Database = {
             referencedRelation: "empleados"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      notificaciones: {
+        Row: {
+          id: string
+          miembro_id: string
+          tipo: string
+          mensaje: string
+          leida: boolean | null
+          fecha_creacion: string | null
+          fecha_lectura: string | null
+        }
+        Insert: {
+          id?: string
+          miembro_id: string
+          tipo?: string
+          mensaje: string
+          leida?: boolean | null
+          fecha_creacion?: string | null
+          fecha_lectura?: string | null
+        }
+        Update: {
+          id?: string
+          miembro_id?: string
+          tipo?: string
+          mensaje?: string
+          leida?: boolean | null
+          fecha_creacion?: string | null
+          fecha_lectura?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificaciones_miembro_id_fkey"
+            columns: ["miembro_id"]
+            isOneToOne: false
+            referencedRelation: "miembros_equipo"
+            referencedColumns: ["id"]
+          }
         ]
       }
       partnerships: {
