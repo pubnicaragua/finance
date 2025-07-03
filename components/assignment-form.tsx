@@ -36,12 +36,12 @@ export function AssignmentForm({
 
   // Preparar fecha inicial y final por defecto
   const today = initialDate || new Date()
-  const defaultStartDate = format(today, 'yyyy-MM-dd')
+  const defaultStartDate = format(today, 'yyyy-MM-dd\'T\'HH:mm')
   
   // Fecha final por defecto: mismo día a las 18:00
   const endDate = new Date(today)
   endDate.setHours(18, 0, 0, 0)
-  const defaultEndDate = format(endDate, 'yyyy-MM-dd')
+  const defaultEndDate = format(endDate, 'yyyy-MM-dd\'T\'HH:mm')
 
   useEffect(() => {
     if (state?.message) {

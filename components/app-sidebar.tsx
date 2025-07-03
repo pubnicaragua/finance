@@ -83,7 +83,6 @@ const navItems = [
     label: "Reportes",
     items: [
       { title: "Resumen de Proyectos", href: "/project-summary", icon: BarChart },
-      { title: "QA Status", href: "/qa-status", icon: BarChart },
     ],
   },
 ]
