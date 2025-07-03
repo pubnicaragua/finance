@@ -3,8 +3,11 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { PlusIcon, DollarSign, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
-import { DollarSign } from "lucide-react" // Importar DollarSign
+import { CuentasPorCobrarForm } from "@/components/cuentas-por-cobrar-form"
 
 export const revalidate = 0
 
@@ -13,7 +16,7 @@ export default async function CuentasPorCobrarPage() {
 
   const { data: clients, error } = await supabase
     .from("clientes")
-    .select("cliente, proyecto, proyeccion_pagos")
+    .select("id, cliente, proyecto, proyeccion_pagos")
     .not("proyeccion_pagos", "is", null) // Solo clientes con proyecciones
 
   if (error) {
@@ -35,6 +38,7 @@ export default async function CuentasPorCobrarPage() {
 
   const allProjections = (clients || []).flatMap((client) =>
     ((client.proyeccion_pagos || []) as Array<any>).map((proj) => ({
+      cliente_id: client.id,
       cliente: client.cliente,
       proyecto: client.proyecto,
       ...proj,
@@ -42,8 +46,8 @@ export default async function CuentasPorCobrarPage() {
   )
 
   const totalProjectedRevenue = allProjections.reduce((sum, p) => sum + p.monto, 0)
-  const totalPaid = allProjections.filter((p) => p.pagado).reduce((sum, p) => sum + p.monto, 0)
-  const totalPending = allProjections.filter((p) => !p.pagado).reduce((sum, p) => sum + p.monto, 0)
+  const totalPaid = allProjections.filter((p) => p.estado === "Pagado").reduce((sum, p) => sum + p.monto, 0)
+  const totalPending = allProjections.filter((p) => p.estado !== "Pagado").reduce((sum, p) => sum + p.monto, 0)
 
   return (
     <SidebarInset>
@@ -51,6 +55,22 @@ export default async function CuentasPorCobrarPage() {
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <h1 className="text-lg font-semibold">Cuentas Por Cobrar</h1>
+        <div className="ml-auto flex items-center gap-2">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button size="sm" className="h-8 gap-1">
+                <PlusIcon className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Añadir Cuenta por Cobrar</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Añadir Cuenta por Cobrar</DialogTitle>
+              </DialogHeader>
+              <CuentasPorCobrarForm clients={clients || []} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4">
         <h2 className="text-2xl font-bold">Cuentas Por Cobrar</h2>
@@ -103,32 +123,90 @@ export default async function CuentasPorCobrarPage() {
                     <TableHead>Fecha</TableHead>
                     <TableHead>Monto</TableHead>
                     <TableHead>Estado</TableHead>
+                    <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {allProjections.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
                         No hay cuentas por cobrar.
                       </TableCell>
                     </TableRow>
                   ) : (
                     allProjections.map((proj, index) => (
-                      <TableRow key={index}>
+                      <TableRow key={`${proj.cliente_id}-${index}`}>
                         <TableCell>{proj.cliente}</TableCell>
                         <TableCell>{proj.proyecto}</TableCell>
                         <TableCell>{proj.fecha}</TableCell>
-                        <TableCell className={proj.pagado ? "text-green-amount" : "text-red-amount"}>
+                        <TableCell className={proj.estado === "Pagado" ? "text-green-amount" : "text-red-amount"}>
                           {formatCurrency(proj.monto)}
                         </TableCell>
                         <TableCell>
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              proj.pagado ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                              proj.estado === "Pagado" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
                             }`}
                           >
-                            {proj.pagado ? "Pagado" : "Pendiente"}
+                            {proj.estado || "Pendiente"}
                           </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm">Editar</Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Editar Cuenta por Cobrar</DialogTitle>
+                                </DialogHeader>
+                                <CuentasPorCobrarForm 
+                                  clients={clients || []} 
+                                  initialData={{
+                                    cliente_id: proj.cliente_id,
+                                    index: index,
+                                    fecha: proj.fecha,
+                                    monto: proj.monto,
+                                    estado: proj.estado || "Pendiente",
+                                    descripcion: proj.descripcion
+                                  }}
+                                />
+                              </DialogContent>
+                            </Dialog>
+                            
+                            <form action={async () => {
+                              "use server"
+                              const supabase = await createClient()
+                              
+                              // Obtener proyecciones actuales
+                              const { data: client } = await supabase
+                                .from("clientes")
+                                .select("proyeccion_pagos")
+                                .eq("id", proj.cliente_id)
+                                .single()
+                              
+                              if (client && client.proyeccion_pagos) {
+                                // Eliminar la proyección en el índice especificado
+                                const updatedProjections = [...client.proyeccion_pagos]
+                                updatedProjections.splice(index, 1)
+                                
+                                // Actualizar el cliente
+                                await supabase
+                                  .from("clientes")
+                                  .update({ proyeccion_pagos: updatedProjections })
+                                  .eq("id", proj.cliente_id)
+                              }
+                              
+                              // Revalidar rutas
+                              revalidatePath("/cuentas-por-cobrar")
+                              revalidatePath(`/clients/${proj.cliente_id}`)
+                            }}>
+                              <Button variant="destructive" size="sm" type="submit">
+                                Eliminar
+                              </Button>
+                            </form>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))

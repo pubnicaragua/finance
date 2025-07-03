@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Calendar } from "@/components/ui/calendar"
 import { AssignmentForm } from "@/components/assignment-form"
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns"
 import { es } from "date-fns/locale"
@@ -230,8 +229,8 @@ export function TeamCalendar({ teamMembers, assignments, clients }: TeamCalendar
                           </Badge>
                         </td>
                         <td className="p-2">
-                          <Badge className={getPriorityColor(assignment.prioridad)}>
-                            {assignment.prioridad}
+                          <Badge className={getPriorityColor(assignment.prioridad || "media")}>
+                            {assignment.prioridad || "media"}
                           </Badge>
                         </td>
                       </tr>

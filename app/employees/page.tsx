@@ -7,8 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import { PlusIcon, Users, DollarSign, Calendar } from "lucide-react"
+import { PlusIcon, Users, DollarSign, Calendar, CheckCircle, Clock } from "lucide-react"
 import { EmployeeForm } from "@/components/employee-form"
+import { EmployeePaymentHistory } from "@/components/employee-payment-history"
 import { formatCurrency } from "@/lib/utils"
 
 export default async function EmployeesPage() {
@@ -34,6 +35,12 @@ export default async function EmployeesPage() {
       </SidebarInset>
     )
   }
+
+  // Obtener datos de nómina para cada empleado
+  const { data: nomina } = await supabase
+    .from("nomina")
+    .select("*")
+    .order("created_at", { ascending: false })
 
   const totalEmpleados = empleados?.length || 0
   const empleadosActivos = empleados?.filter(e => e.estado === 'Activo').length || 0
@@ -139,19 +146,38 @@ export default async function EmployeesPage() {
                       </TableCell>
                       <TableCell>{empleado.fecha_contratacion}</TableCell>
                       <TableCell className="text-right">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              Editar
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[600px]">
-                            <DialogHeader>
-                              <DialogTitle>Editar Empleado</DialogTitle>
-                            </DialogHeader>
-                            <EmployeeForm initialData={empleado} />
-                          </DialogContent>
-                        </Dialog>
+                        <div className="flex justify-end space-x-2">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                Editar
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[600px]">
+                              <DialogHeader>
+                                <DialogTitle>Editar Empleado</DialogTitle>
+                              </DialogHeader>
+                              <EmployeeForm initialData={empleado} />
+                            </DialogContent>
+                          </Dialog>
+                          
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                Historial de Pagos
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[800px]">
+                              <DialogHeader>
+                                <DialogTitle>Historial de Pagos - {empleado.nombre} {empleado.apellido}</DialogTitle>
+                              </DialogHeader>
+                              <EmployeePaymentHistory 
+                                empleado={empleado} 
+                                pagos={nomina?.filter(n => n.empleado_id === empleado.id) || []}
+                              />
+                            </DialogContent>
+                          </Dialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
