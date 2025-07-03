@@ -101,9 +101,7 @@ export function LeadForm({ initialData, onSuccess, onCancel }: LeadFormProps) {
           <SelectContent>
             <SelectItem value="Nuevo">Nuevo</SelectItem>
             <SelectItem value="Contactado">Contactado</SelectItem>
-            <SelectItem value="Calificado">Calificado</SelectItem>
-            <SelectItem value="No Calificado">No Calificado</SelectItem>
-            <SelectItem value="Convertido">Convertido</SelectItem>
+            <SelectItem value="Cerrado">Cerrado</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -139,7 +137,7 @@ export function LeadForm({ initialData, onSuccess, onCancel }: LeadFormProps) {
           id="notas"
           name="notas"
           placeholder="Notas adicionales sobre el lead"
-          defaultValue={initialData?.notas || ""} // CAMBIO: 'comentarios' a 'notas'
+          defaultValue={initialData?.notas || ""}
           className="col-span-3"
         />
       </div>

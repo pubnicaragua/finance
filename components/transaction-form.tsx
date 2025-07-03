@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useEffect, useRef } from "react"
+import { useActionState, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,6 +23,10 @@ export function TransactionForm({ initialData, onSuccess, onCancel }: Transactio
   const [state, formAction, isPending] = useActionState(action, { success: false, message: "" })
   const { toast } = useToast()
   const formRef = useRef<HTMLFormElement>(null)
+  
+  // State for form fields that need reactivity
+  const [tipo, setTipo] = useState(initialData?.tipo || "ingreso")
+  const [aplicarComision, setAplicarComision] = useState(initialData?.aplicar_comision || false)
 
   useEffect(() => {
     if (state?.message) {
@@ -38,14 +42,7 @@ export function TransactionForm({ initialData, onSuccess, onCancel }: Transactio
     }
   }, [state, toast, onSuccess])
 
-  const vendedores = ["Ileana", "Edxel", "Nahuel"] // Lista de vendedores
-
-  // Valores por defecto para los campos controlados si no hay initialData
-  const defaultTipo = initialData?.tipo || "ingreso"
-  const defaultCategoria = initialData?.tipo_ingreso || initialData?.tipo_egreso || ""
-  const defaultAplicarComision = initialData?.aplicar_comision || false
-  const defaultVendedorComision = initialData?.vendedor_comision || ""
-  const defaultComisionAplicada = initialData?.comision_aplicada?.toString() || ""
+  const vendedores = ["Ileana", "Edxel", "Nahuel", "Antonella", "Maria", "Carlos", "Pejota", "Gorrasnic", "Alba", "Roni"] 
 
   return (
     <form ref={formRef} action={formAction} className="grid gap-4 py-4">
@@ -62,7 +59,11 @@ export function TransactionForm({ initialData, onSuccess, onCancel }: Transactio
       </div>
       <div className="space-y-2">
         <Label htmlFor="tipo">Tipo de Transacción</Label>
-        <Select name="tipo" defaultValue={defaultTipo}>
+        <Select 
+          name="tipo" 
+          defaultValue={tipo}
+          onValueChange={(value) => setTipo(value as "ingreso" | "egreso")}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Selecciona tipo" />
           </SelectTrigger>
@@ -105,27 +106,55 @@ export function TransactionForm({ initialData, onSuccess, onCancel }: Transactio
       </div>
       <div className="space-y-2">
         <Label htmlFor="categoria">Categoría</Label>
-        <Input
-          id="categoria"
-          name="categoria"
-          placeholder="Ej: Desarrollo Web, Gastos Operativos"
-          defaultValue={defaultCategoria}
-        />
+        {tipo === "ingreso" ? (
+          <Select name="categoria" defaultValue={initialData?.tipo_ingreso || ""}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecciona categoría" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="bono_inicial">Bono Inicial</SelectItem>
+              <SelectItem value="abono_cliente">Abono Cliente</SelectItem>
+              <SelectItem value="soporte">Soporte</SelectItem>
+              <SelectItem value="otro">Otro</SelectItem>
+            </SelectContent>
+          </Select>
+        ) : (
+          <Select name="categoria" defaultValue={initialData?.tipo_egreso || ""}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecciona categoría" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="gasto">Gasto</SelectItem>
+              <SelectItem value="costo_operativo">Costo Operativo</SelectItem>
+              <SelectItem value="salario">Salario</SelectItem>
+              <SelectItem value="viatico">Viático</SelectItem>
+              <SelectItem value="gasto_oficina">Gasto Oficina</SelectItem>
+              <SelectItem value="comisiones">Comisiones</SelectItem>
+              <SelectItem value="anticipo">Anticipo</SelectItem>
+              <SelectItem value="prestamo">Préstamo</SelectItem>
+              <SelectItem value="publicidad">Publicidad</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
-      {/* Lógica de comisión basada en el tipo de transacción (asumiendo que solo aplica a ingresos) */}
-      {defaultTipo === "ingreso" && (
+      {tipo === "ingreso" && (
         <>
           <div className="flex items-center space-x-2">
-            <Checkbox id="aplicar_comision" name="aplicar_comision" defaultChecked={defaultAplicarComision} />
+            <Checkbox 
+              id="aplicar_comision" 
+              name="aplicar_comision" 
+              checked={aplicarComision}
+              onCheckedChange={(checked) => setAplicarComision(checked as boolean)}
+            />
             <Label htmlFor="aplicar_comision">Aplicar Comisión</Label>
           </div>
 
-          {defaultAplicarComision && ( // Esto es un problema, el estado de la checkbox no es reactivo aquí
+          {aplicarComision && (
             <>
               <div className="space-y-2">
                 <Label htmlFor="vendedor_comision">Vendedor</Label>
-                <Select name="vendedor_comision" defaultValue={defaultVendedorComision}>
+                <Select name="vendedor_comision" defaultValue={initialData?.vendedor_comision || ""}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un vendedor" />
                   </SelectTrigger>
@@ -146,7 +175,7 @@ export function TransactionForm({ initialData, onSuccess, onCancel }: Transactio
                   type="number"
                   step="0.01"
                   placeholder="0.00"
-                  defaultValue={defaultComisionAplicada}
+                  defaultValue={initialData?.comision_aplicada?.toString() || ""}
                 />
               </div>
             </>

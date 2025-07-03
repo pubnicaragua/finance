@@ -5,12 +5,15 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { PartnershipForm } from "@/components/partnership-form"
 import { PlusIcon } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export function AddPartnershipDialog() {
   const [isOpen, setIsOpen] = useState(false)
+  const router = useRouter()
 
   const handleSuccess = () => {
     setIsOpen(false)
+    router.refresh()
   }
 
   return (

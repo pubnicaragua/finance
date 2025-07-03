@@ -14,7 +14,7 @@ export async function addLead(prevState: any, formData: FormData) {
     estado: formData.get("estado") as string,
     fecha_contacto: formData.get("fecha_contacto") as string,
     fuente: formData.get("fuente") as string,
-    notas: formData.get("notas") as string, // CAMBIO: 'comentarios' a 'notas'
+    notas: formData.get("notas") as string,
   }
 
   const { error } = await supabase.from("leads").insert(newLead)
@@ -39,7 +39,7 @@ export async function updateLead(prevState: any, formData: FormData) {
     estado: formData.get("estado") as string,
     fecha_contacto: formData.get("fecha_contacto") as string,
     fuente: formData.get("fuente") as string,
-    notas: formData.get("notas") as string, // CAMBIO: 'comentarios' a 'notas'
+    notas: formData.get("notas") as string,
   }
 
   const { error } = await supabase.from("leads").update(updatedLead).eq("id", id)

@@ -30,7 +30,7 @@ export function PartnershipForm({ initialData, onSuccess, onCancel }: Partnershi
         variant: state.success ? "default" : "destructive",
       })
       if (state.success) {
-        onSuccess?.()
+        if (onSuccess) onSuccess()
         formRef.current?.reset()
       }
     }
@@ -118,7 +118,6 @@ export function PartnershipForm({ initialData, onSuccess, onCancel }: Partnershi
           className="col-span-3"
         />
       </div>
-      {/* Campos para responsabilidades, expectativas, historial_interacciones no están en el formulario por ahora */}
       <div className="flex justify-end gap-2 mt-4">
         <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
           Cancelar

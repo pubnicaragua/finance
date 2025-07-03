@@ -73,15 +73,14 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
         </div>
         <div className="space-y-2">
           <Label htmlFor="estado">Estado</Label>
-          <Select name="estado" defaultValue={initialData?.estado || ""}>
+          <Select name="estado" defaultValue={initialData?.estado || "MVP"}>
             <SelectTrigger>
               <SelectValue placeholder="Selecciona un estado" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Activo">Activo</SelectItem>
-              <SelectItem value="Inactivo">Inactivo</SelectItem>
-              <SelectItem value="Pendiente">Pendiente</SelectItem>
-              <SelectItem value="Completado">Completado</SelectItem>
+              <SelectItem value="MVP">MVP</SelectItem>
+              <SelectItem value="Completa">Completa</SelectItem>
+              <SelectItem value="Cancelada">Cancelada</SelectItem>
             </SelectContent>
           </Select>
         </div>
