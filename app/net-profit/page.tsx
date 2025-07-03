@@ -1,5 +1,4 @@
 export const dynamic = "force-dynamic"
-import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
@@ -9,8 +8,7 @@ import { cn } from "@/lib/utils"
 import { CheckCircle2, XCircle } from "lucide-react"
 
 export default async function NetProfitPage() {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { data: ingresosData, error: ingresosError } = await supabase
     .from("transacciones")

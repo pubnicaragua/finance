@@ -1,12 +1,10 @@
 "use server"
 
-import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
 export async function addQaIssue(formData: FormData) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const feature = formData.get("feature") as string
   const description = formData.get("description") as string
@@ -31,8 +29,7 @@ export async function addQaIssue(formData: FormData) {
 }
 
 export async function resolveQaIssue(id: string) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { error } = await supabase
     .from("qa_issues")

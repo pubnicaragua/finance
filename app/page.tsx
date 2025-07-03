@@ -1,5 +1,4 @@
 export const dynamic = "force-dynamic"
-import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server" // Importación directa del cliente de servidor
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
@@ -9,8 +8,7 @@ import { cn } from "@/lib/utils"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 
 export default async function HomePage() {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   // Fetch data for summary cards
   const { data: cuentasFinancieras, error: cuentasError } = await supabase

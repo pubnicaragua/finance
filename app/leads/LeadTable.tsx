@@ -1,4 +1,3 @@
-import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -9,8 +8,7 @@ import { DeleteLeadButton } from "@/components/delete-lead-button"
 import type { Tables } from "@/lib/database.types"
 
 export default async function LeadTable() {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   const { data: leads, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false })
 
   if (error) {

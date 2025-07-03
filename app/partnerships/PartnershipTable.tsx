@@ -1,4 +1,3 @@
-import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -9,8 +8,7 @@ import { DeletePartnershipButton } from "@/components/delete-partnership-button"
 import type { Tables } from "@/lib/database.types"
 
 export default async function PartnershipTable() {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   const { data: partnerships, error } = await supabase
     .from("partnerships")
     .select("*")

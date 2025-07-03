@@ -1,4 +1,3 @@
-import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
@@ -10,8 +9,7 @@ import { DollarSign } from "lucide-react" // Importar DollarSign
 export const revalidate = 0
 
 export default async function CuentasPorCobrarPage() {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { data: clients, error } = await supabase
     .from("clientes")

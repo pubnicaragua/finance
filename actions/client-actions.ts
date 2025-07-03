@@ -1,13 +1,11 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
 
 export async function addClient(prevState: any, formData: FormData) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   const newClient: TablesInsert<"clientes"> = {
     cliente: formData.get("cliente") as string,
     proyecto: formData.get("proyecto") as string,
@@ -34,8 +32,7 @@ export async function addClient(prevState: any, formData: FormData) {
 }
 
 export async function updateClient(prevState: any, formData: FormData) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   const id = formData.get("id") as string
   const updatedClient: TablesUpdate<"clientes"> = {
     cliente: formData.get("cliente") as string,
@@ -62,8 +59,7 @@ export async function updateClient(prevState: any, formData: FormData) {
 }
 
 export async function deleteClient(id: string) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   const { error } = await supabase.from("clientes").delete().eq("id", id)
 
   if (error) {
@@ -76,8 +72,7 @@ export async function deleteClient(id: string) {
 }
 
 export async function getClientById(id: string) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   const { data, error } = await supabase.from("clientes").select("*").eq("id", id).single()
   
   if (error) {
@@ -89,8 +84,7 @@ export async function getClientById(id: string) {
 }
 
 export async function getClients() {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   const { data, error } = await supabase.from("clientes").select("*").order("created_at", { ascending: false })
   
   if (error) {

@@ -1,13 +1,11 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
 
 export async function addPartnership(prevState: any, formData: FormData) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   const newPartnership: TablesInsert<"partnerships"> = {
     nombre: formData.get("nombre") as string,
     tipo_acuerdo: formData.get("tipo_acuerdo") as string,
@@ -32,8 +30,7 @@ export async function addPartnership(prevState: any, formData: FormData) {
 }
 
 export async function updatePartnership(prevState: any, formData: FormData) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   const id = formData.get("id") as string
   const updatedPartnership: TablesUpdate<"partnerships"> = {
     nombre: formData.get("nombre") as string,
@@ -56,8 +53,7 @@ export async function updatePartnership(prevState: any, formData: FormData) {
 }
 
 export async function deletePartnership(id: string) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   const { error } = await supabase.from("partnerships").delete().eq("id", id)
 
   if (error) {
@@ -70,8 +66,7 @@ export async function deletePartnership(id: string) {
 }
 
 export async function getPartnerships() {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   const { data, error } = await supabase.from("partnerships").select("*").order("fecha_inicio", { ascending: false })
   if (error) {
     console.error("Error fetching partnerships:", error)

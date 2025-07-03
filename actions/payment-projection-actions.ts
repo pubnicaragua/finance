@@ -1,13 +1,11 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 
 // Helper function to update client's 'abonado' and 'historial_pagos'
 async function updateClientPaymentHistory(clienteId: string, newHistorialPagos: any[]) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   // Calculate new 'abonado' total
   const newAbonado = newHistorialPagos.reduce((sum, payment) => sum + (payment?.monto || 0), 0)
@@ -50,8 +48,7 @@ export async function addPayment(prevState: any, formData: FormData) {
     return { success: false, message: "Error al añadir pago: El monto es requerido y debe ser un número válido." }
   }
 
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { data: client, error: fetchClientError } = await supabase
     .from("clientes")
@@ -109,8 +106,7 @@ export async function updatePayment(prevState: any, formData: FormData) {
     return { success: false, message: "Error al actualizar pago: El monto es requerido y debe ser un número válido." }
   }
 
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { data: client, error: fetchClientError } = await supabase
     .from("clientes")
@@ -159,8 +155,7 @@ export async function deletePayment(clienteId: string, index: number) {
     }
   }
 
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { data: client, error: fetchClientError } = await supabase
     .from("clientes")
@@ -214,8 +209,7 @@ export async function addProjection(prevState: any, formData: FormData) {
     return { success: false, message: "Error al añadir proyección: El monto es requerido y debe ser un número válido." }
   }
 
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { data: client, error: fetchClientError } = await supabase
     .from("clientes")
@@ -281,8 +275,7 @@ export async function updateProjection(prevState: any, formData: FormData) {
     }
   }
 
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { data: client, error: fetchClientError } = await supabase
     .from("clientes")
@@ -343,8 +336,7 @@ export async function deleteProjection(clienteId: string, index: number) {
     }
   }
 
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const { data: client, error: fetchClientError } = await supabase
     .from("clientes")
@@ -382,8 +374,7 @@ export async function deleteProjection(clienteId: string, index: number) {
 }
 
 export async function getPaymentsByClientId(id: string) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   const { data, error } = await supabase.from("clientes").select("historial_pagos").eq("id", id).single()
   if (error) {
     console.error("Error fetching payments:", error)
@@ -393,8 +384,7 @@ export async function getPaymentsByClientId(id: string) {
 }
 
 export async function getProjectionsByClientId(id: string) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
   const { data, error } = await supabase.from("clientes").select("proyeccion_pagos").eq("id", id).single()
   if (error) {
     console.error("Error fetching projections:", error)
