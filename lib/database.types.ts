@@ -5,31 +5,40 @@ export type Database = {
     Tables: {
       activos_corrientes: {
         Row: {
+          id: string
+          descripcion: string
+          valor: number
           cuenta_id: string | null
           created_at: string | null
-          descripcion: string
-          fecha_adquisicion: string | null
-          id: string
           updated_at: string | null
-          valor: number
+          fecha_adquisicion: string | null
+          nombre: string
+          tipo: string
+          monto: number
         }
         Insert: {
+          id?: string
+          descripcion: string
+          valor: number
           cuenta_id?: string | null
           created_at?: string | null
-          descripcion: string
-          fecha_adquisicion?: string | null
-          id?: string
           updated_at?: string | null
-          valor: number
+          fecha_adquisicion?: string | null
+          nombre: string
+          tipo: string
+          monto: number
         }
         Update: {
+          id?: string
+          descripcion?: string
+          valor?: number
           cuenta_id?: string | null
           created_at?: string | null
-          descripcion?: string
-          fecha_adquisicion?: string | null
-          id?: string
           updated_at?: string | null
-          valor?: number
+          fecha_adquisicion?: string | null
+          nombre?: string
+          tipo?: string
+          monto?: number
         }
         Relationships: [
           {
@@ -43,60 +52,81 @@ export type Database = {
       }
       activos_no_corrientes: {
         Row: {
-          created_at: string | null
-          depreciacion: number | null
-          descripcion: string
           id: string
-          updated_at: string | null
+          descripcion: string
           valor: number
+          depreciacion: number | null
           valor_neto: number | null
+          created_at: string | null
+          updated_at: string | null
+          nombre: string
+          tipo: string
+          monto: number
+          fecha_adquisicion: string
+          vida_util_anios: number | null
+          valor_residual: number | null
+          depreciacion_acumulada: number | null
         }
         Insert: {
-          created_at?: string | null
-          depreciacion?: number | null
-          descripcion: string
           id?: string
-          updated_at?: string | null
+          descripcion: string
           valor: number
+          depreciacion?: number | null
           valor_neto?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+          nombre: string
+          tipo: string
+          monto: number
+          fecha_adquisicion: string
+          vida_util_anios?: number | null
+          valor_residual?: number | null
+          depreciacion_acumulada?: number | null
         }
         Update: {
-          created_at?: string | null
-          depreciacion?: number | null
-          descripcion?: string
           id?: string
-          updated_at?: string | null
+          descripcion?: string
           valor?: number
+          depreciacion?: number | null
           valor_neto?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+          nombre?: string
+          tipo?: string
+          monto?: number
+          fecha_adquisicion?: string
+          vida_util_anios?: number | null
+          valor_residual?: number | null
+          depreciacion_acumulada?: number | null
         }
         Relationships: []
       }
       alcances_desarrollo: {
         Row: {
+          id: string
           cliente_id: string
           created_at: string
           descripcion: string
           estado: string
           fecha_implementacion: string | null
-          id: string
           nombre_modulo: string
         }
         Insert: {
+          id?: string
           cliente_id: string
           created_at?: string
           descripcion: string
           estado?: string
           fecha_implementacion?: string | null
-          id?: string
           nombre_modulo: string
         }
         Update: {
+          id?: string
           cliente_id?: string
           created_at?: string
           descripcion?: string
           estado?: string
           fecha_implementacion?: string | null
-          id?: string
           nombre_modulo?: string
         }
         Relationships: [
@@ -111,30 +141,30 @@ export type Database = {
       }
       avances_proyecto: {
         Row: {
+          id: string
           cliente_id: string
           comentarios_cliente: string | null
           created_at: string
           descripcion: string
           fecha: string
-          id: string
           porcentaje_avance: number
         }
         Insert: {
+          id?: string
           cliente_id: string
           comentarios_cliente?: string | null
           created_at?: string
           descripcion: string
           fecha: string
-          id?: string
           porcentaje_avance?: number
         }
         Update: {
+          id?: string
           cliente_id?: string
           comentarios_cliente?: string | null
           created_at?: string
           descripcion?: string
           fecha?: string
-          id?: string
           porcentaje_avance?: number
         }
         Relationships: [
@@ -149,61 +179,61 @@ export type Database = {
       }
       clientes: {
         Row: {
-          abonado: number | null
-          cliente: string
-          costo_proyecto: number | null
-          created_at: string | null
-          deuda: number | null
-          estado: string | null
-          fecha_vencimiento: string | null
-          historial_pagos: Json | null
           id: string
-          pais: string | null
-          proyeccion_pagos: Json | null
+          cliente: string
           proyecto: string
           tipo_software: string | null
+          estado: string | null
+          pais: string | null
+          costo_proyecto: number | null
+          abonado: number | null
+          deuda: number | null
+          fecha_vencimiento: string | null
+          historial_pagos: Json | null
+          proyeccion_pagos: Json | null
+          created_at: string | null
           updated_at: string | null
         }
         Insert: {
-          abonado?: number | null
-          cliente: string
-          costo_proyecto?: number | null
-          created_at?: string | null
-          deuda?: number | null
-          estado?: string | null
-          fecha_vencimiento?: string | null
-          historial_pagos?: Json | null
           id?: string
-          pais?: string | null
-          proyeccion_pagos?: Json | null
+          cliente: string
           proyecto: string
           tipo_software?: string | null
+          estado?: string | null
+          pais?: string | null
+          costo_proyecto?: number | null
+          abonado?: number | null
+          deuda?: number | null
+          fecha_vencimiento?: string | null
+          historial_pagos?: Json | null
+          proyeccion_pagos?: Json | null
+          created_at?: string | null
           updated_at?: string | null
         }
         Update: {
-          abonado?: number | null
-          cliente?: string
-          costo_proyecto?: number | null
-          created_at?: string | null
-          deuda?: number | null
-          estado?: string | null
-          fecha_vencimiento?: string | null
-          historial_pagos?: Json | null
           id?: string
-          pais?: string | null
-          proyeccion_pagos?: Json | null
+          cliente?: string
           proyecto?: string
           tipo_software?: string | null
+          estado?: string | null
+          pais?: string | null
+          costo_proyecto?: number | null
+          abonado?: number | null
+          deuda?: number | null
+          fecha_vencimiento?: string | null
+          historial_pagos?: Json | null
+          proyeccion_pagos?: Json | null
+          created_at?: string | null
           updated_at?: string | null
         }
         Relationships: []
       }
       comisiones: {
         Row: {
+          id: string
           cliente_id: string | null
           created_at: string | null
           fecha: string
-          id: string
           monto: number
           pagada: boolean | null
           transaccion_id: string | null
@@ -212,10 +242,10 @@ export type Database = {
           vendedores_adicionales: string[] | null
         }
         Insert: {
+          id?: string
           cliente_id?: string | null
           created_at?: string | null
           fecha: string
-          id?: string
           monto: number
           pagada?: boolean | null
           transaccion_id?: string | null
@@ -224,10 +254,10 @@ export type Database = {
           vendedores_adicionales?: string[] | null
         }
         Update: {
+          id?: string
           cliente_id?: string | null
           created_at?: string | null
           fecha?: string
-          id?: string
           monto?: number
           pagada?: boolean | null
           transaccion_id?: string | null
@@ -252,433 +282,228 @@ export type Database = {
           },
         ]
       }
-      configuracion: {
-        Row: {
-          clave: string
-          created_at: string | null
-          descripcion: string | null
-          id: string
-          updated_at: string | null
-          valor: string
-        }
-        Insert: {
-          clave: string
-          created_at?: string | null
-          descripcion?: string | null
-          id?: string
-          updated_at?: string | null
-          valor: string
-        }
-        Update: {
-          clave?: string
-          created_at?: string | null
-          descripcion?: string | null
-          id?: string
-          updated_at?: string | null
-          valor?: string
-        }
-        Relationships: []
-      }
-      cuentas: {
-        Row: {
-          id: string
-          moneda: string
-          nombre: string
-          saldo: number | null
-        }
-        Insert: {
-          id: string
-          moneda: string
-          nombre: string
-          saldo?: number | null
-        }
-        Update: {
-          id?: string
-          moneda?: string
-          nombre?: string
-          saldo?: number | null
-        }
-        Relationships: []
-      }
       cuentas_financieras: {
         Row: {
-          created_at: string | null
           id: string
-          moneda: string
           nombre: string
+          moneda: string
           saldo: number | null
+          created_at: string | null
           updated_at: string | null
         }
         Insert: {
-          created_at?: string | null
           id: string
-          moneda: string
           nombre: string
+          moneda: string
           saldo?: number | null
+          created_at?: string | null
           updated_at?: string | null
         }
         Update: {
-          created_at?: string | null
           id?: string
-          moneda?: string
           nombre?: string
+          moneda?: string
           saldo?: number | null
+          created_at?: string | null
           updated_at?: string | null
         }
         Relationships: []
-      }
-      egresos: {
-        Row: {
-          cuenta_id: string | null
-          created_at: string
-          descripcion: string | null
-          fecha: string
-          id: string
-          moneda: string
-          monto: number
-          proveedor: string | null
-        }
-        Insert: {
-          cuenta_id?: string | null
-          created_at?: string
-          descripcion?: string | null
-          fecha?: string
-          id?: string
-          moneda?: string
-          monto: number
-          proveedor?: string | null
-        }
-        Update: {
-          cuenta_id?: string | null
-          created_at?: string
-          descripcion?: string | null
-          fecha?: string
-          id?: string
-          moneda?: string
-          monto?: number
-          proveedor?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "egresos_cuenta_id_fkey"
-            columns: ["cuenta_id"]
-            isOneToOne: false
-            referencedRelation: "cuentas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ingresos: {
-        Row: {
-          cliente_id: string | null
-          cuenta_id: string | null
-          created_at: string
-          descripcion: string | null
-          fecha: string
-          id: string
-          moneda: string
-          monto: number
-        }
-        Insert: {
-          cliente_id?: string | null
-          cuenta_id?: string | null
-          created_at?: string
-          descripcion?: string | null
-          fecha?: string
-          id?: string
-          moneda?: string
-          monto: number
-        }
-        Update: {
-          cliente_id?: string | null
-          cuenta_id?: string | null
-          created_at?: string
-          descripcion?: string | null
-          fecha?: string
-          id?: string
-          moneda?: string
-          monto?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ingresos_cliente_id_fkey"
-            columns: ["cliente_id"]
-            isOneToOne: false
-            referencedRelation: "clientes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ingresos_cuenta_id_fkey"
-            columns: ["cuenta_id"]
-            isOneToOne: false
-            referencedRelation: "cuentas"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       leads: {
         Row: {
-          canal_contacto: string | null
-          cliente: string
-          created_at: string | null
-          estado: string | null
-          fecha_ultimo_contacto: string | null
           id: string
-          pais: string | null
-          proyeccion_usd: number | null
-          proyecto: string
-          seguimiento: Json | null
-          tipo_software: string | null
+          nombre: string
+          email: string | null
+          telefono: string | null
+          interes: string | null
+          estado: string | null
+          fecha_contacto: string | null
+          fuente: string | null
+          notas: string | null
+          created_at: string | null
           updated_at: string | null
         }
         Insert: {
-          canal_contacto?: string | null
-          cliente: string
-          created_at?: string | null
-          estado?: string | null
-          fecha_ultimo_contacto?: string | null
           id?: string
-          pais?: string | null
-          proyeccion_usd?: number | null
-          proyecto: string
-          seguimiento?: Json | null
-          tipo_software?: string | null
+          nombre: string
+          email?: string | null
+          telefono?: string | null
+          interes?: string | null
+          estado?: string | null
+          fecha_contacto?: string | null
+          fuente?: string | null
+          notas?: string | null
+          created_at?: string | null
           updated_at?: string | null
         }
         Update: {
-          canal_contacto?: string | null
-          cliente?: string
-          created_at?: string | null
-          estado?: string | null
-          fecha_ultimo_contacto?: string | null
           id?: string
-          pais?: string | null
-          proyeccion_usd?: number | null
-          proyecto?: string
-          seguimiento?: Json | null
-          tipo_software?: string | null
+          nombre?: string
+          email?: string | null
+          telefono?: string | null
+          interes?: string | null
+          estado?: string | null
+          fecha_contacto?: string | null
+          fuente?: string | null
+          notas?: string | null
+          created_at?: string | null
           updated_at?: string | null
         }
         Relationships: []
       }
       partnerships: {
         Row: {
-          created_at: string | null
-          estado: string | null
-          expectativas: Json | null
-          fecha_fin: string | null
-          fecha_inicio: string | null
-          historial_interacciones: Json | null
           id: string
-          monto_financiado: number | null
           nombre: string
-          responsabilidades: Json | null
           tipo_acuerdo: string | null
+          estado: string | null
+          monto_financiado: number | null
+          fecha_inicio: string | null
+          fecha_fin: string | null
+          responsabilidades: Json | null
+          expectativas: Json | null
+          historial_interacciones: Json | null
+          created_at: string | null
         }
         Insert: {
-          created_at?: string | null
-          estado?: string | null
-          expectativas?: Json | null
-          fecha_fin?: string | null
-          fecha_inicio?: string | null
-          historial_interacciones?: Json | null
           id?: string
-          monto_financiado?: number | null
           nombre: string
-          responsabilidades?: Json | null
           tipo_acuerdo?: string | null
+          estado?: string | null
+          monto_financiado?: number | null
+          fecha_inicio?: string | null
+          fecha_fin?: string | null
+          responsabilidades?: Json | null
+          expectativas?: Json | null
+          historial_interacciones?: Json | null
+          created_at?: string | null
         }
         Update: {
-          created_at?: string | null
-          estado?: string | null
-          expectativas?: Json | null
-          fecha_fin?: string | null
-          fecha_inicio?: string | null
-          historial_interacciones?: Json | null
           id?: string
-          monto_financiado?: number | null
           nombre?: string
-          responsabilidades?: Json | null
           tipo_acuerdo?: string | null
+          estado?: string | null
+          monto_financiado?: number | null
+          fecha_inicio?: string | null
+          fecha_fin?: string | null
+          responsabilidades?: Json | null
+          expectativas?: Json | null
+          historial_interacciones?: Json | null
+          created_at?: string | null
         }
         Relationships: []
       }
       pasivos_corrientes: {
         Row: {
-          created_at: string | null
-          debe: number
-          descripcion: string
           id: string
-          saldo: number
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          debe: number
-          descripcion: string
-          id?: string
-          saldo: number
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          debe?: number
-          descripcion?: string
-          id?: string
-          saldo?: number
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      pasivos_no_corrientes: {
-        Row: {
-          created_at: string | null
-          descripcion: string
-          fecha_vencimiento: string | null
-          id: string
-          saldo: number
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          descripcion: string
-          fecha_vencimiento?: string | null
-          id?: string
-          saldo: number
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          descripcion?: string
-          fecha_vencimiento?: string | null
-          id?: string
-          saldo?: number
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      proyectos: {
-        Row: {
-          cliente_id: string | null
-          costo_total: number | null
-          created_at: string
+          nombre: string
+          tipo: string
+          monto: number
+          fecha_vencimiento: string
           descripcion: string | null
-          estado: string | null
-          fecha_fin: string | null
-          fecha_inicio: string | null
-          id: string
-          nombre: string
+          created_at: string | null
           updated_at: string | null
         }
         Insert: {
-          cliente_id?: string | null
-          costo_total?: number | null
-          created_at?: string
-          descripcion?: string | null
-          estado?: string | null
-          fecha_fin?: string | null
-          fecha_inicio?: string | null
           id?: string
           nombre: string
+          tipo: string
+          monto: number
+          fecha_vencimiento: string
+          descripcion?: string | null
+          created_at?: string | null
           updated_at?: string | null
         }
         Update: {
-          cliente_id?: string | null
-          costo_total?: number | null
-          created_at?: string
-          descripcion?: string | null
-          estado?: string | null
-          fecha_fin?: string | null
-          fecha_inicio?: string | null
           id?: string
           nombre?: string
+          tipo?: string
+          monto?: number
+          fecha_vencimiento?: string
+          descripcion?: string | null
+          created_at?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "proyectos_cliente_id_fkey"
-            columns: ["cliente_id"]
-            isOneToOne: false
-            referencedRelation: "clientes"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      tipo_cambio: {
+      qa_issues: {
         Row: {
-          created_at: string
-          fecha: string
-          fuente: string | null
           id: string
-          valor: number
+          feature: string
+          description: string
+          status: string
+          created_at: string
+          resolved_at: string | null
         }
         Insert: {
-          created_at?: string
-          fecha?: string
-          fuente?: string | null
           id?: string
-          valor: number
+          feature: string
+          description: string
+          status?: string
+          created_at?: string
+          resolved_at?: string | null
         }
         Update: {
-          created_at?: string
-          fecha?: string
-          fuente?: string | null
           id?: string
-          valor?: number
+          feature?: string
+          description?: string
+          status?: string
+          created_at?: string
+          resolved_at?: string | null
         }
         Relationships: []
       }
       transacciones: {
         Row: {
-          aplicar_comision: boolean | null
-          cliente_id: string | null
-          comision_aplicada: number | null
-          concepto: string
+          id: string
           cuenta_id: string | null
-          created_at: string | null
+          concepto: string
           detalle: string | null
           fecha: string
-          id: string
           monto: number
           tipo: string
-          tipo_egreso: string | null
           tipo_ingreso: string | null
-          updated_at: string | null
+          tipo_egreso: string | null
+          cliente_id: string | null
+          aplicar_comision: boolean | null
           vendedor_comision: string | null
+          comision_aplicada: number | null
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
-          aplicar_comision?: boolean | null
-          cliente_id?: string | null
-          comision_aplicada?: number | null
-          concepto: string
+          id?: string
           cuenta_id?: string | null
-          created_at?: string | null
+          concepto: string
           detalle?: string | null
           fecha: string
-          id?: string
           monto: number
           tipo: string
-          tipo_egreso?: string | null
           tipo_ingreso?: string | null
-          updated_at?: string | null
+          tipo_egreso?: string | null
+          cliente_id?: string | null
+          aplicar_comision?: boolean | null
           vendedor_comision?: string | null
+          comision_aplicada?: number | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
-          aplicar_comision?: boolean | null
-          cliente_id?: string | null
-          comision_aplicada?: number | null
-          concepto?: string
+          id?: string
           cuenta_id?: string | null
-          created_at?: string | null
+          concepto?: string
           detalle?: string | null
           fecha?: string
-          id?: string
           monto?: number
           tipo?: string
-          tipo_egreso?: string | null
           tipo_ingreso?: string | null
-          updated_at?: string | null
+          tipo_egreso?: string | null
+          cliente_id?: string | null
+          aplicar_comision?: boolean | null
           vendedor_comision?: string | null
+          comision_aplicada?: number | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {

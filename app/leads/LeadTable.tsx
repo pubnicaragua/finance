@@ -21,13 +21,13 @@ export default async function LeadTable() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Cliente / Lead</TableHead>
-            <TableHead>Proyecto</TableHead>
-            <TableHead>Tipo Software</TableHead>
+            <TableHead>Nombre</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Teléfono</TableHead>
+            <TableHead>Interés</TableHead>
             <TableHead>Estado</TableHead>
-            <TableHead>Proyección USD</TableHead>
-            <TableHead>Canal Contacto</TableHead>
-            <TableHead>Último Contacto</TableHead>
+            <TableHead>Fecha Contacto</TableHead>
+            <TableHead>Fuente</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
@@ -41,13 +41,13 @@ export default async function LeadTable() {
           ) : (
             leads.map((lead: Tables<"leads">) => (
               <TableRow key={lead.id}>
-                <TableCell className="font-medium">{lead.cliente}</TableCell>
-                <TableCell>{lead.proyecto}</TableCell>
-                <TableCell>{lead.tipo_software}</TableCell>
+                <TableCell className="font-medium">{lead.nombre}</TableCell>
+                <TableCell>{lead.email}</TableCell>
+                <TableCell>{lead.telefono}</TableCell>
+                <TableCell>{lead.interes}</TableCell>
                 <TableCell>{lead.estado}</TableCell>
-                <TableCell>${lead.proyeccion_usd?.toFixed(2) || "0.00"}</TableCell>
-                <TableCell>{lead.canal_contacto}</TableCell>
-                <TableCell>{lead.fecha_ultimo_contacto}</TableCell>
+                <TableCell>{lead.fecha_contacto}</TableCell>
+                <TableCell>{lead.fuente}</TableCell>
                 <TableCell className="flex justify-end gap-2">
                   <Dialog>
                     <DialogTrigger asChild>

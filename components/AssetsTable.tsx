@@ -5,31 +5,34 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from "lucide-react"
-import { DataTable } from "@/components/ui/data-table" // Asegúrate de que este componente exista
-import { deleteNonCurrentAsset } from "@/actions/asset-liability-actions" // Importar la Server Action
+import { DataTable } from "@/components/ui/data-table"
+import { deleteNonCurrentAsset, deleteCurrentAsset } from "@/actions/asset-liability-actions"
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ActivoNoCorrienteForm } from "@/components/activo-no-corriente-form"
+import { ActivoCorrienteForm } from "@/components/activo-corriente-form"
 import type { Tables } from "@/lib/database.types"
 
 interface AssetsTableProps {
-  assets: Tables<"activos_no_corrientes">[]
-  onAssetOperation: () => void // Callback para revalidar datos
+  assets: Tables<"activos_no_corrientes">[] | Tables<"activos_corrientes">[]
+  onAssetOperation: () => void
+  type: "corriente" | "no_corriente"
 }
 
-export function AssetsTable({ assets, onAssetOperation }: AssetsTableProps) {
+export function AssetsTable({ assets, onAssetOperation, type }: AssetsTableProps) {
   const { toast } = useToast()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [editingAsset, setEditingAsset] = useState<Tables<"activos_no_corrientes"> | null>(null)
+  const [editingAsset, setEditingAsset] = useState<any>(null)
 
   const handleDelete = async (id: string) => {
-    const result = await deleteNonCurrentAsset(id)
+    const deleteFunction = type === "corriente" ? deleteCurrentAsset : deleteNonCurrentAsset
+    const result = await deleteFunction(id)
     if (result.success) {
       toast({
         title: "Éxito",
         description: result.message,
       })
-      onAssetOperation() // Revalidar datos
+      onAssetOperation()
     } else {
       toast({
         title: "Error",
@@ -39,7 +42,7 @@ export function AssetsTable({ assets, onAssetOperation }: AssetsTableProps) {
     }
   }
 
-  const handleEdit = (asset: Tables<"activos_no_corrientes">) => {
+  const handleEdit = (asset: any) => {
     setEditingAsset(asset)
     setIsEditDialogOpen(true)
   }
@@ -47,10 +50,10 @@ export function AssetsTable({ assets, onAssetOperation }: AssetsTableProps) {
   const handleEditSuccess = () => {
     setIsEditDialogOpen(false)
     setEditingAsset(null)
-    onAssetOperation() // Revalidar datos
+    onAssetOperation()
   }
 
-  const columns: ColumnDef<Tables<"activos_no_corrientes">>[] = [
+  const columns: ColumnDef<any>[] = [
     {
       accessorKey: "nombre",
       header: "Nombre",
@@ -75,34 +78,36 @@ export function AssetsTable({ assets, onAssetOperation }: AssetsTableProps) {
       accessorKey: "fecha_adquisicion",
       header: "Fecha Adquisición",
     },
-    {
-      accessorKey: "vida_util_anios",
-      header: "Vida Útil (Años)",
-    },
-    {
-      accessorKey: "valor_residual",
-      header: "Valor Residual",
-      cell: ({ row }) => {
-        const amount = Number.parseFloat(row.getValue("valor_residual"))
-        const formatted = new Intl.NumberFormat("es-NI", {
-          style: "currency",
-          currency: "USD",
-        }).format(amount)
-        return <div className="font-medium">{formatted}</div>
+    ...(type === "no_corriente" ? [
+      {
+        accessorKey: "vida_util_anios",
+        header: "Vida Útil (Años)",
       },
-    },
-    {
-      accessorKey: "depreciacion_acumulada",
-      header: "Depreciación Acumulada",
-      cell: ({ row }) => {
-        const amount = Number.parseFloat(row.getValue("depreciacion_acumulada"))
-        const formatted = new Intl.NumberFormat("es-NI", {
-          style: "currency",
-          currency: "USD",
-        }).format(amount)
-        return <div className="font-medium">{formatted}</div>
+      {
+        accessorKey: "valor_residual",
+        header: "Valor Residual",
+        cell: ({ row }: any) => {
+          const amount = Number.parseFloat(row.getValue("valor_residual"))
+          const formatted = new Intl.NumberFormat("es-NI", {
+            style: "currency",
+            currency: "USD",
+          }).format(amount)
+          return <div className="font-medium">{formatted}</div>
+        },
       },
-    },
+      {
+        accessorKey: "depreciacion_acumulada",
+        header: "Depreciación Acumulada",
+        cell: ({ row }: any) => {
+          const amount = Number.parseFloat(row.getValue("depreciacion_acumulada"))
+          const formatted = new Intl.NumberFormat("es-NI", {
+            style: "currency",
+            currency: "USD",
+          }).format(amount)
+          return <div className="font-medium">{formatted}</div>
+        },
+      },
+    ] : []),
     {
       accessorKey: "descripcion",
       header: "Descripción",
@@ -136,13 +141,23 @@ export function AssetsTable({ assets, onAssetOperation }: AssetsTableProps) {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Editar Activo No Corriente</DialogTitle>
+            <DialogTitle>
+              {type === "corriente" ? "Editar Activo Corriente" : "Editar Activo No Corriente"}
+            </DialogTitle>
           </DialogHeader>
-          <ActivoNoCorrienteForm
-            initialData={editingAsset}
-            onSuccess={handleEditSuccess}
-            onCancel={() => setIsEditDialogOpen(false)}
-          />
+          {type === "corriente" ? (
+            <ActivoCorrienteForm
+              initialData={editingAsset}
+              onSuccess={handleEditSuccess}
+              onCancel={() => setIsEditDialogOpen(false)}
+            />
+          ) : (
+            <ActivoNoCorrienteForm
+              initialData={editingAsset}
+              onSuccess={handleEditSuccess}
+              onCancel={() => setIsEditDialogOpen(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </>

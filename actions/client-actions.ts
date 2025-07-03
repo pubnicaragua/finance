@@ -74,6 +74,23 @@ export async function deleteClient(id: string) {
 export async function getClientById(id: string) {
   const supabase = createClient()
   const { data, error } = await supabase.from("clientes").select("*").eq("id", id).single()
-  if (error) throw new Error(error.message)
-  return data
+  
+  if (error) {
+    console.error("Error fetching client:", error)
+    return { success: false, message: error.message, data: null }
+  }
+  
+  return { success: true, data }
+}
+
+export async function getClients() {
+  const supabase = createClient()
+  const { data, error } = await supabase.from("clientes").select("*").order("created_at", { ascending: false })
+  
+  if (error) {
+    console.error("Error fetching clients:", error)
+    return []
+  }
+  
+  return data || []
 }

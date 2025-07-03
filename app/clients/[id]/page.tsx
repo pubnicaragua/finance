@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useParams } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -21,17 +20,15 @@ import { AlcanceForm } from "@/components/alcance-form"
 import type { Tables } from "@/lib/database.types"
 import { getPaymentsByClientId, getProjectionsByClientId } from "@/actions/payment-projection-actions"
 import { getAvancesByClientId, getAlcancesByClientId } from "@/actions/project-updates-actions"
-import { getClientById } from "@/actions/client-actions" // Asumiendo que tienes esta acción
-import { revalidatePath } from "next/cache"
+import { getClientById } from "@/actions/client-actions"
 
 export default function ClientDetailPage() {
   const params = useParams()
   const clientId = params.id as string
-  const supabase = createClient()
 
   const [client, setClient] = useState<Tables<"clientes"> | null>(null)
-  const [payments, setPayments] = useState<Tables<"pagos">[]>([])
-  const [projections, setProjections] = useState<Tables<"proyecciones">[]>([])
+  const [payments, setPayments] = useState<any[]>([])
+  const [projections, setProjections] = useState<any[]>([])
   const [avances, setAvances] = useState<Tables<"avances_proyecto">[]>([])
   const [alcances, setAlcances] = useState<Tables<"alcances_desarrollo">[]>([])
   const [loading, setLoading] = useState(true)
@@ -41,11 +38,11 @@ export default function ClientDetailPage() {
     setLoading(true)
     setError(null)
     try {
-      const clientData = await getClientById(clientId)
-      if (clientData.success && clientData.data) {
-        setClient(clientData.data)
+      const clientResult = await getClientById(clientId)
+      if (clientResult.success && clientResult.data) {
+        setClient(clientResult.data)
       } else {
-        setError(clientData.message || "Cliente no encontrado.")
+        setError(clientResult.message || "Cliente no encontrado.")
       }
 
       const paymentsData = await getPaymentsByClientId(clientId)
@@ -73,11 +70,8 @@ export default function ClientDetailPage() {
     }
   }, [clientId, fetchClientData])
 
-  // Server Action para revalidar la ruta después de una operación de formulario
-  const handleClientDataRevalidation = async () => {
-    "use server"
-    // Revalidar la ruta específica del cliente
-    revalidatePath(`/clients/${clientId}`)
+  const handleDataRefresh = () => {
+    fetchClientData()
   }
 
   if (loading) {
@@ -94,7 +88,7 @@ export default function ClientDetailPage() {
 
   return (
     <div className="flex flex-col gap-4 p-4 md:gap-6 md:p-6">
-      <ClientDetailHeader client={client} onClientDeleted={handleClientDataRevalidation} />
+      <ClientDetailHeader client={client} onClientDeleted={handleDataRefresh} />
 
       <ClientInfoCard client={client} />
 
@@ -122,17 +116,18 @@ export default function ClientDetailPage() {
                   </DialogHeader>
                   <PaymentForm
                     clienteId={clientId}
-                    onSuccess={() => {
-                      fetchClientData()
-                      handleClientDataRevalidation()
-                    }}
+                    onSuccess={handleDataRefresh}
                     onCancel={() => {}}
                   />
                 </DialogContent>
               </Dialog>
             </CardHeader>
             <CardContent>
-              <PaymentHistoryCard payments={payments} onPaymentOperation={handleClientDataRevalidation} />
+              <PaymentHistoryCard 
+                historialPagos={client.historial_pagos as any[]} 
+                clienteId={clientId}
+                onPaymentUpdated={handleDataRefresh}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -153,17 +148,18 @@ export default function ClientDetailPage() {
                   </DialogHeader>
                   <ProjectionForm
                     clienteId={clientId}
-                    onSuccess={() => {
-                      fetchClientData()
-                      handleClientDataRevalidation()
-                    }}
+                    onSuccess={handleDataRefresh}
                     onCancel={() => {}}
                   />
                 </DialogContent>
               </Dialog>
             </CardHeader>
             <CardContent>
-              <ProjectionHistoryCard projections={projections} onProjectionOperation={handleClientDataRevalidation} />
+              <ProjectionHistoryCard 
+                proyeccionPagos={client.proyeccion_pagos as any[]} 
+                clienteId={clientId}
+                onProjectionUpdated={handleDataRefresh}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -184,17 +180,14 @@ export default function ClientDetailPage() {
                   </DialogHeader>
                   <AvanceForm
                     clienteId={clientId}
-                    onSuccess={() => {
-                      fetchClientData()
-                      handleClientDataRevalidation()
-                    }}
+                    onSuccess={handleDataRefresh}
                     onCancel={() => {}}
                   />
                 </DialogContent>
               </Dialog>
             </CardHeader>
             <CardContent>
-              <AvancesCard avances={avances} onAvanceOperation={handleClientDataRevalidation} />
+              <AvancesCard avances={avances} clienteId={clientId} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -215,17 +208,14 @@ export default function ClientDetailPage() {
                   </DialogHeader>
                   <AlcanceForm
                     clienteId={clientId}
-                    onSuccess={() => {
-                      fetchClientData()
-                      handleClientDataRevalidation()
-                    }}
+                    onSuccess={handleDataRefresh}
                     onCancel={() => {}}
                   />
                 </DialogContent>
               </Dialog>
             </CardHeader>
             <CardContent>
-              <AlcancesCard alcances={alcances} onAlcanceOperation={handleClientDataRevalidation} />
+              <AlcancesCard alcances={alcances} clienteId={clientId} />
             </CardContent>
           </Card>
         </TabsContent>
