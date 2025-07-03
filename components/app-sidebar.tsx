@@ -16,6 +16,9 @@ import {
   Search,
   UserCheck,
   Receipt,
+  Bell,
+  CalendarDays,
+  Settings,
 } from "lucide-react"
 
 import {
@@ -61,6 +64,9 @@ const navItems = [
     items: [
       { title: "Empleados", href: "/employees", icon: UserCheck },
       { title: "Nómina", href: "/payroll", icon: Receipt },
+      { title: "Calendario del Equipo", href: "/team-calendar", icon: CalendarDays },
+      { title: "Notificaciones", href: "/team-calendar/notifications", icon: Bell },
+      { title: "Configuración", href: "/team-calendar/settings", icon: Settings },
     ],
   },
   {
