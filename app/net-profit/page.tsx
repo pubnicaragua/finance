@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 import { CheckCircle2, XCircle } from "lucide-react"
 
 export default async function NetProfitPage() {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data: ingresosData, error: ingresosError } = await supabase
     .from("transacciones")

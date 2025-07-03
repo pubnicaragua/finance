@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@/lib/utils"
 
 export default async function BalanceSheetPage() {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   // Fetch Activos Circulantes
   const { data: cuentas, error: cuentasError } = await supabase.from("cuentas_financieras").select("nombre, saldo")

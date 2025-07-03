@@ -1,4 +1,4 @@
-import { createServerSupabase } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency } from "@/lib/utils"
@@ -7,7 +7,7 @@ import { FolderOpenIcon, CheckCircleIcon, PlayCircleIcon } from "lucide-react"
 export const revalidate = 0
 
 export default async function ProjectSummaryPage() {
-  const supabase = createServerSupabase()
+  const supabase = createClient()
 
   // Obtener datos de clientes en lugar de proyectos
   const { data: clients, error } = await supabase.from("clientes").select("*")

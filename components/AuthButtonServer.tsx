@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 
 export default async function AuthButtonServer() {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const {
     data: { user },
@@ -12,7 +12,7 @@ export default async function AuthButtonServer() {
 
   const signOut = async () => {
     "use server"
-    const supabase = await createClient()
+    const supabase = createClient()
     await supabase.auth.signOut()
     return redirect("/login") // Redirigir a login después de cerrar sesión
   }

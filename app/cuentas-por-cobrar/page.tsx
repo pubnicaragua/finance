@@ -9,7 +9,7 @@ import { DollarSign } from "lucide-react" // Importar DollarSign
 export const revalidate = 0
 
 export default async function CuentasPorCobrarPage() {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data: clients, error } = await supabase
     .from("clientes")

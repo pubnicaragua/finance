@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 export default async function AccountSummaryPage() {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data: cuentas, error } = await supabase.from("cuentas_financieras").select("*")
 

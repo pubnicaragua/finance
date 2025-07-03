@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 export default async function CommissionsPage() {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data: comisiones, error } = await supabase.from("comisiones").select("*")
 

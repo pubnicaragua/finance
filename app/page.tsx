@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 
 export default async function HomePage() {
-  const supabase = await createClient() // Usar await
+  const supabase = createClient() // Usar sin await
 
   // Fetch data for summary cards
   const { data: cuentasFinancieras, error: cuentasError } = await supabase
