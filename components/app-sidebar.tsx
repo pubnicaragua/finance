@@ -14,6 +14,8 @@ import {
   Landmark,
   TrendingUp,
   Search,
+  UserCheck,
+  Receipt,
 } from "lucide-react"
 
 import {
@@ -37,21 +39,45 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 // Datos de navegación
 const navItems = [
   {
-    label: "Navegación",
+    label: "Navegación Principal",
     items: [
       { title: "Dashboard General", href: "/", icon: LayoutDashboard },
       { title: "Clientes", href: "/clients", icon: Users },
       { title: "Leads", href: "/leads", icon: UserPlus },
-      { title: "Resumen de Proyectos", href: "/project-summary", icon: BarChart },
       { title: "Partnerships", href: "/partnerships", icon: Handshake },
-      { title: "Ingresos y Egresos", href: "/transactions", icon: DollarSign },
-      { title: "Cuentas Por Cobrar", href: "/cuentas-por-cobrar", icon: Calendar }, // Renombrado y nueva ruta
+    ],
+  },
+  {
+    label: "Finanzas",
+    items: [
+      { title: "Transacciones", href: "/transactions", icon: DollarSign },
+      { title: "Cuentas Por Cobrar", href: "/cuentas-por-cobrar", icon: Calendar },
       { title: "Comisiones", href: "/commissions", icon: Percent },
       { title: "Resumen de Cuentas", href: "/account-summary", icon: Wallet },
+    ],
+  },
+  {
+    label: "Recursos Humanos",
+    items: [
+      { title: "Empleados", href: "/employees", icon: UserCheck },
+      { title: "Nómina", href: "/payroll", icon: Receipt },
+    ],
+  },
+  {
+    label: "Contabilidad",
+    items: [
       { title: "Balance General", href: "/balance-sheet", icon: Scale },
+      { title: "Activos Corrientes", href: "/activos-corrientes", icon: Landmark },
       { title: "Activos No Corrientes", href: "/non-current-assets", icon: Landmark },
       { title: "Pasivos Corrientes", href: "/current-liabilities", icon: TrendingUp },
       { title: "Utilidad Neta", href: "/net-profit", icon: DollarSign },
+    ],
+  },
+  {
+    label: "Reportes",
+    items: [
+      { title: "Resumen de Proyectos", href: "/project-summary", icon: BarChart },
+      { title: "QA Status", href: "/qa-status", icon: BarChart },
     ],
   },
 ]

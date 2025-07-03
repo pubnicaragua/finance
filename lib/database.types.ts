@@ -121,6 +121,8 @@ export type Database = {
           completado: boolean | null
           backlog_url: string | null
           firma_virtual: string | null
+          firma_aprobada: boolean | null
+          fecha_vencimiento_firma: string | null
         }
         Insert: {
           id?: string
@@ -133,6 +135,8 @@ export type Database = {
           completado?: boolean | null
           backlog_url?: string | null
           firma_virtual?: string | null
+          firma_aprobada?: boolean | null
+          fecha_vencimiento_firma?: string | null
         }
         Update: {
           id?: string
@@ -145,6 +149,8 @@ export type Database = {
           completado?: boolean | null
           backlog_url?: string | null
           firma_virtual?: string | null
+          firma_aprobada?: boolean | null
+          fecha_vencimiento_firma?: string | null
         }
         Relationships: [
           {
@@ -286,6 +292,57 @@ export type Database = {
         }
         Relationships: []
       }
+      empleados: {
+        Row: {
+          id: string
+          nombre: string
+          apellido: string
+          email: string | null
+          telefono: string | null
+          puesto: string
+          departamento: string | null
+          salario_base: number
+          fecha_contratacion: string | null
+          estado: string | null
+          numero_cuenta: string | null
+          banco: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          nombre: string
+          apellido: string
+          email?: string | null
+          telefono?: string | null
+          puesto: string
+          departamento?: string | null
+          salario_base: number
+          fecha_contratacion?: string | null
+          estado?: string | null
+          numero_cuenta?: string | null
+          banco?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          nombre?: string
+          apellido?: string
+          email?: string | null
+          telefono?: string | null
+          puesto?: string
+          departamento?: string | null
+          salario_base?: number
+          fecha_contratacion?: string | null
+          estado?: string | null
+          numero_cuenta?: string | null
+          banco?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           id: string
@@ -327,6 +384,60 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      nomina: {
+        Row: {
+          id: string
+          empleado_id: string
+          periodo_inicio: string
+          periodo_fin: string
+          salario_base: number
+          bonificaciones: number | null
+          deducciones: number | null
+          salario_neto: number | null
+          estado: string | null
+          fecha_pago: string | null
+          notas: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          empleado_id: string
+          periodo_inicio: string
+          periodo_fin: string
+          salario_base: number
+          bonificaciones?: number | null
+          deducciones?: number | null
+          estado?: string | null
+          fecha_pago?: string | null
+          notas?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          empleado_id?: string
+          periodo_inicio?: string
+          periodo_fin?: string
+          salario_base?: number
+          bonificaciones?: number | null
+          deducciones?: number | null
+          estado?: string | null
+          fecha_pago?: string | null
+          notas?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nomina_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "empleados"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       partnerships: {
         Row: {
@@ -604,6 +715,6 @@ export type Enums<
     : never = never,
 > = PublicEnumNameOrOptions extends { schema: keyof Database }
   ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
-    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+  : PublicTableNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicTableNameOrOptions]
     : never
