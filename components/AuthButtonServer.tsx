@@ -1,10 +1,12 @@
 import Link from "next/link"
+import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server" // Importación directa del cliente de servidor
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 
 export default async function AuthButtonServer() {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
 
   const {
     data: { user },
@@ -12,7 +14,8 @@ export default async function AuthButtonServer() {
 
   const signOut = async () => {
     "use server"
-    const supabase = createClient()
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
     await supabase.auth.signOut()
     return redirect("/login") // Redirigir a login después de cerrar sesión
   }

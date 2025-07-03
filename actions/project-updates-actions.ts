@@ -1,5 +1,6 @@
 "use server"
 
+import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
@@ -37,7 +38,8 @@ export async function addAvance(prevState: any, formData: FormData) {
     }
   }
 
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const newAvance: TablesInsert<"avances_proyecto"> = {
     cliente_id: cliente_id,
     fecha: fecha,
@@ -93,7 +95,8 @@ export async function updateAvance(prevState: any, formData: FormData) {
     }
   }
 
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const updatedAvance: TablesUpdate<"avances_proyecto"> = {
     fecha: fecha,
     descripcion: descripcion,
@@ -113,7 +116,8 @@ export async function updateAvance(prevState: any, formData: FormData) {
 }
 
 export async function deleteAvance(id: string, cliente_id: string) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const { error } = await supabase.from("avances_proyecto").delete().eq("id", id)
 
   if (error) {
@@ -151,7 +155,8 @@ export async function addAlcance(prevState: any, formData: FormData) {
     return { success: false, message: "Error al añadir alcance: La descripción es requerida." }
   }
 
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const newAlcance: TablesInsert<"alcances_desarrollo"> = {
     cliente_id: cliente_id,
     nombre_modulo: nombre_modulo,
@@ -200,7 +205,8 @@ export async function updateAlcance(prevState: any, formData: FormData) {
     return { success: false, message: "Error al actualizar alcance: La descripción es requerida." }
   }
 
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const updatedAlcance: TablesUpdate<"alcances_desarrollo"> = {
     nombre_modulo: nombre_modulo,
     descripcion: descripcion,
@@ -220,7 +226,8 @@ export async function updateAlcance(prevState: any, formData: FormData) {
 }
 
 export async function deleteAlcance(id: string, cliente_id: string) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const { error } = await supabase.from("alcances_desarrollo").delete().eq("id", id)
 
   if (error) {
@@ -233,7 +240,8 @@ export async function deleteAlcance(id: string, cliente_id: string) {
 }
 
 export async function getAvancesByClientId(id: string) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const { data, error } = await supabase
     .from("avances_proyecto")
     .select("*")
@@ -247,7 +255,8 @@ export async function getAvancesByClientId(id: string) {
 }
 
 export async function getAlcancesByClientId(id: string) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const { data, error } = await supabase
     .from("alcances_desarrollo")
     .select("*")

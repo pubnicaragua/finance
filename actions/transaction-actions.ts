@@ -1,11 +1,13 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
 
 export async function addTransaction(prevState: any, formData: FormData) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const fecha = formData.get("fecha") as string
   const tipo = formData.get("tipo") as TablesInsert<"transacciones">["tipo"]
   const concepto = formData.get("concepto") as string
@@ -76,7 +78,8 @@ export async function addTransaction(prevState: any, formData: FormData) {
 }
 
 export async function updateTransaction(prevState: any, formData: FormData) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const id = formData.get("id") as string
   const concepto = formData.get("concepto") as string
   const fecha = formData.get("fecha") as string
@@ -150,7 +153,8 @@ export async function updateTransaction(prevState: any, formData: FormData) {
 }
 
 export async function deleteTransaction(id: string) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const { error } = await supabase.from("transacciones").delete().eq("id", id)
 
   if (error) {
@@ -167,7 +171,8 @@ export async function deleteTransaction(id: string) {
 }
 
 export async function getTransactions() {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const { data, error } = await supabase.from("transacciones").select("*").order("fecha", { ascending: false })
   if (error) {
     console.error("Error fetching transactions:", error)

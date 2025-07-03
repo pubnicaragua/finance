@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic"
+import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
@@ -7,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@/lib/utils"
 
 export default async function BalanceSheetPage() {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
 
   // Fetch Activos Corrientes
   const { data: cuentas, error: cuentasError } = await supabase.from("cuentas_financieras").select("nombre, saldo")

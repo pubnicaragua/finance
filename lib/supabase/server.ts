@@ -3,6 +3,7 @@
 
 import { cookies } from "next/headers"
 import { createServerClient } from "@supabase/ssr"
+import type { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies"
 
 // Forzamos la inclusión de la dependencia peer de supabase-js
 import "@supabase/storage-js"
@@ -11,7 +12,7 @@ import "@supabase/storage-js"
  * Crea un cliente Supabase para uso exclusivo del servidor.
  * No incluyas este módulo en componentes "use client".
  */
-export function createClient() {
+export function createClient(cookieStore?: ReadonlyRequestCookies) {
   // --- VALIDATE ENV-VARS & CHOOSE THE RIGHT KEY ------------------------------
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
   const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -28,16 +29,19 @@ export function createClient() {
   const SUPABASE_KEY = SERVICE_ROLE ?? ANON_KEY
   // ---------------------------------------------------------------------------
 
+  // Use the provided cookie store or get it from the request context
+  const cookieStoreInstance = cookieStore || cookies()
+
   return createServerClient(SUPABASE_URL, SUPABASE_KEY, {
     cookies: {
       get(name: string) {
-        return cookies().get(name)?.value
+        return cookieStoreInstance.get(name)?.value
       },
       set(name: string, value: string, options: any) {
-        cookies().set({ name, value, ...options })
+        cookieStoreInstance.set({ name, value, ...options })
       },
       remove(name: string, options: any) {
-        cookies().set({ name, value: "", ...options })
+        cookieStoreInstance.set({ name, value: "", ...options })
       },
     },
   })

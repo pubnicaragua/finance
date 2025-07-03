@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic"
 
+import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
@@ -7,7 +8,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 export default async function AccountSummaryPage() {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
 
   const { data: cuentas, error } = await supabase.from("cuentas_financieras").select("*")
 

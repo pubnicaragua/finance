@@ -1,11 +1,13 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
 
 export async function addLead(prevState: any, formData: FormData) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const newLead: TablesInsert<"leads"> = {
     nombre: formData.get("nombre") as string,
     email: formData.get("email") as string,
@@ -29,7 +31,8 @@ export async function addLead(prevState: any, formData: FormData) {
 }
 
 export async function updateLead(prevState: any, formData: FormData) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const id = formData.get("id") as string
   const updatedLead: TablesUpdate<"leads"> = {
     nombre: formData.get("nombre") as string,
@@ -54,7 +57,8 @@ export async function updateLead(prevState: any, formData: FormData) {
 }
 
 export async function deleteLead(id: string) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const { error } = await supabase.from("leads").delete().eq("id", id)
 
   if (error) {
@@ -67,7 +71,8 @@ export async function deleteLead(id: string) {
 }
 
 export async function getLeads() {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const { data, error } = await supabase.from("leads").select("*").order("fecha_contacto", { ascending: false })
   if (error) {
     console.error("Error fetching leads:", error)

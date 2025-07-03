@@ -1,3 +1,4 @@
+import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { ClientForm } from "@/components/client-form"
 import { DeleteClientButton } from "@/components/delete-client-button"
@@ -20,7 +21,8 @@ import { Separator } from "@/components/ui/separator"
 export const revalidate = 0
 
 export default async function ClientsPage() {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
 
   const { data: clients, error } = await supabase.from("clientes").select("*").order("created_at", { ascending: false })
 

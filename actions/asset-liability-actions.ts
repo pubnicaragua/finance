@@ -1,12 +1,14 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import type { TablesInsert, TablesUpdate } from "@/lib/database.types"
 
 // --- Activos Corrientes Actions ---
 export async function addCurrentAsset(prevState: any, formData: FormData) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const newAsset: TablesInsert<"activos_corrientes"> = {
     descripcion: formData.get("descripcion") as string,
     valor: Number.parseFloat(formData.get("valor") as string),
@@ -27,7 +29,8 @@ export async function addCurrentAsset(prevState: any, formData: FormData) {
 }
 
 export async function updateCurrentAsset(prevState: any, formData: FormData) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const id = formData.get("id") as string
   const updatedAsset: TablesUpdate<"activos_corrientes"> = {
     descripcion: formData.get("descripcion") as string,
@@ -49,7 +52,8 @@ export async function updateCurrentAsset(prevState: any, formData: FormData) {
 }
 
 export async function deleteCurrentAsset(id: string) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const { error } = await supabase.from("activos_corrientes").delete().eq("id", id)
 
   if (error) {
@@ -63,7 +67,8 @@ export async function deleteCurrentAsset(id: string) {
 }
 
 export async function getCurrentAssets() {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const { data, error } = await supabase
     .from("activos_corrientes")
     .select("*")
@@ -77,7 +82,8 @@ export async function getCurrentAssets() {
 
 // --- Activos No Corrientes Actions ---
 export async function addNonCurrentAsset(prevState: any, formData: FormData) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const newAsset: TablesInsert<"activos_no_corrientes"> = {
     descripcion: formData.get("descripcion") as string,
     valor: Number.parseFloat(formData.get("valor") as string),
@@ -97,7 +103,8 @@ export async function addNonCurrentAsset(prevState: any, formData: FormData) {
 }
 
 export async function updateNonCurrentAsset(prevState: any, formData: FormData) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const id = formData.get("id") as string
   const updatedAsset: TablesUpdate<"activos_no_corrientes"> = {
     descripcion: formData.get("descripcion") as string,
@@ -118,7 +125,8 @@ export async function updateNonCurrentAsset(prevState: any, formData: FormData) 
 }
 
 export async function deleteNonCurrentAsset(id: string) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const { error } = await supabase.from("activos_no_corrientes").delete().eq("id", id)
 
   if (error) {
@@ -132,7 +140,8 @@ export async function deleteNonCurrentAsset(id: string) {
 }
 
 export async function getNonCurrentAssets() {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const { data, error } = await supabase
     .from("activos_no_corrientes")
     .select("*")
@@ -146,7 +155,8 @@ export async function getNonCurrentAssets() {
 
 // --- Pasivos Corrientes Actions ---
 export async function addCurrentLiability(prevState: any, formData: FormData) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const newLiability: TablesInsert<"pasivos_corrientes"> = {
     descripcion: formData.get("descripcion") as string,
     debe: Number.parseFloat(formData.get("debe") as string),
@@ -166,7 +176,8 @@ export async function addCurrentLiability(prevState: any, formData: FormData) {
 }
 
 export async function updateCurrentLiability(prevState: any, formData: FormData) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const id = formData.get("id") as string
   const updatedLiability: TablesUpdate<"pasivos_corrientes"> = {
     descripcion: formData.get("descripcion") as string,
@@ -187,7 +198,8 @@ export async function updateCurrentLiability(prevState: any, formData: FormData)
 }
 
 export async function deleteCurrentLiability(id: string) {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const { error } = await supabase.from("pasivos_corrientes").delete().eq("id", id)
 
   if (error) {
@@ -201,7 +213,8 @@ export async function deleteCurrentLiability(id: string) {
 }
 
 export async function getCurrentLiabilities() {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
   const { data, error } = await supabase
     .from("pasivos_corrientes")
     .select("*")
